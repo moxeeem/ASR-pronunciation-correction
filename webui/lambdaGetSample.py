@@ -37,15 +37,13 @@ with open(sample_folder+'data_de_en_2.pickle', 'rb') as handle:
 lambda_database['de'] = TextDataset(df, 'de')
 lambda_database['en'] = TextDataset(df, 'en')
 lambda_translate_new_sample = False
-lambda_ipa_converter['de'] = RuleBasedModels.EpitranPhonemConverter(
-    epitran.Epitran('deu-Latn'))
+# lambda_ipa_converter['de'] = RuleBasedModels.EpitranPhonemConverter(
+#     epitran.Epitran('deu-Latn'))
 lambda_ipa_converter['en'] = RuleBasedModels.EngPhonemConverter()
 
 
 def lambda_handler(event, context):
-
     body = json.loads(event['body'])
-
     category = int(body['category'])
 
     language = body['language']

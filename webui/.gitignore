@@ -128,3 +128,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# ignore .pdm-python
+# pointer to interpreter
+.pdm-python
+
+# ignore audio files
+*.ogg
+
+# ignore .vscode folder
+.vscode/

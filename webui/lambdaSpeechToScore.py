@@ -1,4 +1,3 @@
-
 import torch
 import json
 import os
@@ -10,187 +9,221 @@ import time
 import audioread
 import numpy as np
 from torchaudio.transforms import Resample
+from typing import Any, Dict, Tuple
 
-
+# Инициализация тренера для английского языка
 trainer_SST_lambda = {}
-# trainer_SST_lambda['de'] = pronunciationTrainer.getTrainer("de")
 trainer_SST_lambda['en'] = pronunciationTrainer.getTrainer("en")
 
+# Преобразование частоты дискретизации аудиосигнала с 48kHz до 16kHz
 transform = Resample(orig_freq=48000, new_freq=16000)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event: Dict[str, Any], context: Any) -> str:
+    """
+    AWS Lambda хэндлер для обработки входящих данных и аудиофайлов.
 
+    1. Распаковывает JSON данные, содержащие текст и аудиофайл.
+    2. Сохраняет аудиофайл на диск и декодирует его.
+    3. Применяет предобработку к аудиосигналу и вызывает тренер для обработки аудио относительно текста.
+    4. Постобрабатывает результаты и возвращает их в виде JSON.
+
+    Аргументы:
+        event (dict): Входящее событие с данными, включая текст и закодированное аудио.
+        context (Any): Контекст исполнения Lambda.
+
+    Возвращает:
+        str: JSON строка с результатами обработки транскрипций и аудио.
+    """
+    # Распаковка данных из запроса
     data = json.loads(event['body'])
 
     real_text = data['title']
-    file_bytes = base64.b64decode(
-        data['base64Audio'][22:].encode('utf-8'))
+    file_bytes = base64.b64decode(data['base64Audio'][22:].encode('utf-8'))
     language = data['language']
 
-    if len(real_text) == 0:
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Credentials': "true",
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-            },
-            'body': ''
-        }
+    # Если текст отсутствует, возвращаем пустой ответ
+    if not real_text:
+        return generate_response('')
 
     start = time.time()
-    random_file_name = './'+utilsFileIO.generateRandomString()+'.ogg'
-    f = open(random_file_name, 'wb')
-    f.write(file_bytes)
-    f.close()
-    print('Time for saving binary in file: ', str(time.time()-start))
 
+    # Сохраняем закодированный аудиофайл на диск
+    random_file_name = f'./{utilsFileIO.generateRandomString()}.ogg'
+    with open(random_file_name, 'wb') as f:
+        f.write(file_bytes)
+
+    print('Time for saving binary in file: ', str(time.time() - start))
+
+    # Загружаем и декодируем аудиофайл
     start = time.time()
     signal, fs = audioread_load(random_file_name)
 
+    # Применяем преобразование частоты дискретизации
     signal = transform(torch.Tensor(signal)).unsqueeze(0)
+    print('Time for loading .ogg file: ', str(time.time() - start))
 
-    print('Time for loading .ogg file file: ', str(time.time()-start))
+    # Обрабатываем аудиофайл для заданного текста с помощью тренера
+    result = trainer_SST_lambda[language].processAudioForGivenText(signal, real_text)
 
-    result = trainer_SST_lambda[language].processAudioForGivenText(
-        signal, real_text)
-
+    # Удаляем временный файл
     start = time.time()
     os.remove(random_file_name)
-    print('Time for deleting file: ', str(time.time()-start))
+    print('Time for deleting file: ', str(time.time() - start))
 
+    # Постобработка результатов транскрипции и оценок произношения
     start = time.time()
-    real_transcripts_ipa = ' '.join(
-        [word[0] for word in result['real_and_transcribed_words_ipa']])
-    matched_transcripts_ipa = ' '.join(
-        [word[1] for word in result['real_and_transcribed_words_ipa']])
+    res = process_transcription_result(result)
+    print('Time to post-process results: ', str(time.time() - start))
 
-    real_transcripts = ' '.join(
-        [word[0] for word in result['real_and_transcribed_words']])
-    matched_transcripts = ' '.join(
-        [word[1] for word in result['real_and_transcribed_words']])
+    # Возвращаем результат в формате JSON
+    return json.dumps(res)
 
+
+def generate_response(body: str) -> Dict[str, Any]:
+    """
+    Генерирует стандартный HTTP-ответ для Lambda API.
+
+    Аргументы:
+        body (str): Тело ответа.
+
+    Возвращает:
+        dict: HTTP-ответ с кодом 200 и необходимыми заголовками.
+    """
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Credentials': "true",
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        },
+        'body': body
+    }
+
+
+def process_transcription_result(result: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Обрабатывает результат транскрипции и оценки произношения.
+
+    1. Извлекает исходный и транскрибированный текст в виде транскрипций IPA.
+    2. Сравнивает транскрибированные слова с реальными.
+    3. Оценивает правильность каждого символа и генерирует финальные результаты.
+
+    Аргументы:
+        result (dict): Результат обработки аудио и текста, включая оценки произношения.
+
+    Возвращает:
+        dict: Словарь с отформатированными данными по результатам транскрипции.
+    """
+    # Извлечение транскрипций IPA и оригинальных текстов
+    real_transcripts_ipa = ' '.join([word[0] for word in result['real_and_transcribed_words_ipa']])
+    matched_transcripts_ipa = ' '.join([word[1] for word in result['real_and_transcribed_words_ipa']])
+
+    real_transcripts = ' '.join([word[0] for word in result['real_and_transcribed_words']])
+    matched_transcripts = ' '.join([word[1] for word in result['real_and_transcribed_words']])
+
+    # Преобразование в нижний регистр для сравнения реальных слов
     words_real = real_transcripts.lower().split()
     mapped_words = matched_transcripts.split()
 
-    is_letter_correct_all_words = ''
-    for idx, word_real in enumerate(words_real):
+    # Оценка правильности каждого символа в транскрибированных словах
+    is_letter_correct_all_words = ''.join(
+        ''.join([str(is_correct) for is_correct in wm.getWhichLettersWereTranscribedCorrectly(
+            word_real, wm.get_best_mapped_words(mapped_words[idx], word_real)[0])]) + ' '
+        for idx, word_real in enumerate(words_real)
+    )
 
-        mapped_letters, mapped_letters_indices = wm.get_best_mapped_words(
-            mapped_words[idx], word_real)
+    # Категории точности для каждой пары слов
+    pair_accuracy_category = ' '.join([str(category) for category in result['pronunciation_categories']])
 
-        is_letter_correct = wm.getWhichLettersWereTranscribedCorrectly(
-            word_real, mapped_letters)  # , mapped_letters_indices)
-
-        is_letter_correct_all_words += ''.join([str(is_correct)
-                                                for is_correct in is_letter_correct]) + ' '
-
-    pair_accuracy_category = ' '.join(
-        [str(category) for category in result['pronunciation_categories']])
-    print('Time to post-process results: ', str(time.time()-start))
-
-    res = {'real_transcript': result['recording_transcript'],
-           'ipa_transcript': result['recording_ipa'],
-           'pronunciation_accuracy': str(int(result['pronunciation_accuracy'])),
-           'real_transcripts': real_transcripts, 'matched_transcripts': matched_transcripts,
-           'real_transcripts_ipa': real_transcripts_ipa, 'matched_transcripts_ipa': matched_transcripts_ipa,
-           'pair_accuracy_category': pair_accuracy_category,
-           'start_time': result['start_time'],
-           'end_time': result['end_time'],
-           'is_letter_correct_all_words': is_letter_correct_all_words}
-
-    return json.dumps(res)
-
-# From Librosa
+    # Возвращаем отформатированные результаты
+    return {
+        'real_transcript': result['recording_transcript'],
+        'ipa_transcript': result['recording_ipa'],
+        'pronunciation_accuracy': str(int(result['pronunciation_accuracy'])),
+        'real_transcripts': real_transcripts,
+        'matched_transcripts': matched_transcripts,
+        'real_transcripts_ipa': real_transcripts_ipa,
+        'matched_transcripts_ipa': matched_transcripts_ipa,
+        'pair_accuracy_category': pair_accuracy_category,
+        'start_time': result['start_time'],
+        'end_time': result['end_time'],
+        'is_letter_correct_all_words': is_letter_correct_all_words
+    }
 
 
-def audioread_load(path, offset=0.0, duration=None, dtype=np.float32):
-    """Load an audio buffer using audioread.
-
-    This loads one block at a time, and then concatenates the results.
+def audioread_load(path: str, offset: float = 0.0, duration: float = None, dtype: np.dtype = np.float32) -> Tuple[
+    np.ndarray, int]:
     """
+    Загружает аудиофайл с использованием библиотеки audioread и возвращает аудиосигнал и частоту дискретизации.
 
+    1. Загружает аудиофайл блоками, начиная с заданного смещения (offset) и заканчивая через указанное время (duration).
+    2. Преобразует аудиосигнал в массив с плавающей точкой.
+
+    Аргументы:
+        path (str): Путь к аудиофайлу.
+        offset (float): Смещение начала загрузки аудио в секундах.
+        duration (float): Продолжительность загрузки в секундах.
+        dtype (np.dtype): Тип данных для аудиосигнала.
+
+    Возвращает:
+        tuple: Аудиосигнал в виде массива и частота дискретизации.
+    """
     y = []
     with audioread.audio_open(path) as input_file:
         sr_native = input_file.samplerate
         n_channels = input_file.channels
 
+        # Рассчитываем начальную и конечную точки считывания аудио
         s_start = int(np.round(sr_native * offset)) * n_channels
-
-        if duration is None:
-            s_end = np.inf
-        else:
-            s_end = s_start + \
-                (int(np.round(sr_native * duration)) * n_channels)
+        s_end = np.inf if duration is None else s_start + (int(np.round(sr_native * duration)) * n_channels)
 
         n = 0
-
         for frame in input_file:
             frame = buf_to_float(frame, dtype=dtype)
             n_prev = n
             n = n + len(frame)
 
             if n < s_start:
-                # offset is after the current frame
-                # keep reading
+                # Пропускаем кадры до нужного смещения
                 continue
-
             if s_end < n_prev:
-                # we're off the end.  stop reading
+                # Если достигли конца, выходим
                 break
-
             if s_end < n:
-                # the end is in this frame.  crop.
-                frame = frame[: s_end - n_prev]
-
+                # Если конец аудиосигнала в этом кадре, обрезаем его
+                frame = frame[:s_end - n_prev]
             if n_prev <= s_start <= n:
-                # beginning is in this frame
+                # Если начало аудио в этом кадре, загружаем его
                 frame = frame[(s_start - n_prev):]
 
-            # tack on the current frame
+            # Добавляем кадр в список
             y.append(frame)
 
-    if y:
-        y = np.concatenate(y)
-        if n_channels > 1:
-            y = y.reshape((-1, n_channels)).T
-    else:
-        y = np.empty(0, dtype=dtype)
+    # Конкатенируем блоки в один массив
+    y = np.concatenate(y) if y else np.empty(0, dtype=dtype)
+
+    # Если сигнал многоканальный, преобразуем в нужный формат
+    if n_channels > 1:
+        y = y.reshape((-1, n_channels)).T
 
     return y, sr_native
 
-# From Librosa
 
-
-def buf_to_float(x, n_bytes=2, dtype=np.float32):
-    """Convert an integer buffer to floating point values.
-    This is primarily useful when loading integer-valued wav data
-    into numpy arrays.
-
-    Parameters
-    ----------
-    x : np.ndarray [dtype=int]
-        The integer-valued data buffer
-
-    n_bytes : int [1, 2, 4]
-        The number of bytes per sample in ``x``
-
-    dtype : numeric type
-        The target output type (default: 32-bit float)
-
-    Returns
-    -------
-    x_float : np.ndarray [dtype=float]
-        The input data buffer cast to floating point
+def buf_to_float(x: bytes, n_bytes: int = 2, dtype: np.dtype = np.float32) -> np.ndarray:
     """
+    Конвертирует аудиобуфер из целых чисел в числа с плавающей точкой.
 
-    # Invert the scale of the data
-    scale = 1.0 / float(1 << ((8 * n_bytes) - 1))
+    Аргументы:
+        x (bytes): Входной буфер с аудиоданными.
+        n_bytes (int): Количество байт на семпл.
+        dtype (np.dtype): Тип данных для выходного массива.
 
-    # Construct the format string
-    fmt = "<i{:d}".format(n_bytes)
-
-    # Rescale and format the data buffer
+    Возвращает:
+        np.ndarray: Аудиосигнал в формате с плавающей точкой.
+    """
+    # Преобразование данных из байтов в целочисленные значения и последующее масштабирование
+    scale = 1.0 / float(1 << (8 * n_bytes - 1))
+    fmt = f"<i{n_bytes}"
     return scale * np.frombuffer(x, fmt).astype(dtype)

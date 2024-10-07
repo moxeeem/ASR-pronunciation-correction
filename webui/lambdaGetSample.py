@@ -34,7 +34,7 @@ lambda_ipa_converter = {}
 with open(sample_folder+'data_de_en_2.pickle', 'rb') as handle:
     df = pickle.load(handle)
 
-lambda_database['de'] = TextDataset(df, 'de')
+#lambda_database['de'] = TextDataset(df, 'de')
 lambda_database['en'] = TextDataset(df, 'en')
 lambda_translate_new_sample = False
 # lambda_ipa_converter['de'] = RuleBasedModels.EpitranPhonemConverter(

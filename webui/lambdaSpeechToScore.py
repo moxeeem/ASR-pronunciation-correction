@@ -1,25 +1,30 @@
-import torch
-import json
-import os
-import WordMatching as wm
-import utilsFileIO
-import pronunciationTrainer
 import base64
+import json
 import time
+from typing import Any
+
 import audioread
 import numpy as np
+import numpy.typing as npt
+import torch
 from torchaudio.transforms import Resample
-from typing import Any, Dict, Tuple
+
+import utils
+import WordMatching as wm
+import pronunciationTrainer as prTr
 
 # Инициализация тренера для английского языка
-trainer_SST_lambda = {}
-trainer_SST_lambda['en'] = pronunciationTrainer.getTrainer("en")
+trainer_SST_lambda: dict[str, prTr.PronunciationTrainer] = {}
+trainer_SST_lambda["en"] = prTr.getTrainer("en")
 
 # Преобразование частоты дискретизации аудиосигнала с 48kHz до 16kHz
-transform = Resample(orig_freq=48000, new_freq=16000)
+transform: Resample = Resample(
+    orig_freq=48000,
+    new_freq=16000
+)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> str:
+def lambda_handler(event: dict[str, Any], context: Any) -> str:
     """
     AWS Lambda хэндлер для обработки входящих данных и аудиофайлов.
 
@@ -36,24 +41,24 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> str:
         str: JSON строка с результатами обработки транскрипций и аудио.
     """
     # Распаковка данных из запроса
-    data = json.loads(event['body'])
+    data: dict[str, str] = json.loads(event["body"])
 
-    real_text = data['title']
-    file_bytes = base64.b64decode(data['base64Audio'][22:].encode('utf-8'))
-    language = data['language']
+    real_text = data["title"]
+    file_bytes = base64.b64decode(data["base64Audio"][22:].encode("utf-8"))
+    language = data["language"]
 
     # Если текст отсутствует, возвращаем пустой ответ
     if not real_text:
-        return generate_response('')
+        return generate_response("")
 
     start = time.time()
 
     # Сохраняем закодированный аудиофайл на диск
-    random_file_name = f'./{utilsFileIO.generateRandomString()}.ogg'
-    with open(random_file_name, 'wb') as f:
+    random_file_name = f"./{utils.generateRandomString()}.ogg"
+    with open(random_file_name, "wb") as f:
         f.write(file_bytes)
 
-    print('Time for saving binary in file: ', str(time.time() - start))
+    print("Time for saving binary in file: ", str(time.time() - start))
 
     # Загружаем и декодируем аудиофайл
     start = time.time()
@@ -61,7 +66,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> str:
 
     # Применяем преобразование частоты дискретизации
     signal = transform(torch.Tensor(signal)).unsqueeze(0)
-    print('Time for loading .ogg file: ', str(time.time() - start))
+    print("Time for loading .ogg file: ", str(time.time() - start))
 
     # Обрабатываем аудиофайл для заданного текста с помощью тренера
     result = trainer_SST_lambda[language].processAudioForGivenText(signal, real_text)
@@ -69,18 +74,18 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> str:
     # Удаляем временный файл
     start = time.time()
     os.remove(random_file_name)
-    print('Time for deleting file: ', str(time.time() - start))
+    print("Time for deleting file: ", str(time.time() - start))
 
     # Постобработка результатов транскрипции и оценок произношения
     start = time.time()
     res = process_transcription_result(result)
-    print('Time to post-process results: ', str(time.time() - start))
+    print("Time to post-process results: ", str(time.time() - start))
 
     # Возвращаем результат в формате JSON
     return json.dumps(res)
 
 
-def generate_response(body: str) -> Dict[str, Any]:
+def generate_response(body: str) -> dict[str, Any]:
     """
     Генерирует стандартный HTTP-ответ для Lambda API.
 
@@ -91,18 +96,18 @@ def generate_response(body: str) -> Dict[str, Any]:
         dict: HTTP-ответ с кодом 200 и необходимыми заголовками.
     """
     return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Credentials': "true",
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        "statusCode": 200,
+        "headers": {
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
         },
-        'body': body
+        "body": body
     }
 
 
-def process_transcription_result(result: Dict[str, Any]) -> Dict[str, Any]:
+def process_transcription_result(result: dict[str, Any]) -> dict[str, Any]:
     """
     Обрабатывает результат транскрипции и оценки произношения.
 
@@ -117,11 +122,11 @@ def process_transcription_result(result: Dict[str, Any]) -> Dict[str, Any]:
         dict: Словарь с отформатированными данными по результатам транскрипции.
     """
     # Извлечение транскрипций IPA и оригинальных текстов
-    real_transcripts_ipa = ' '.join([word[0] for word in result['real_and_transcribed_words_ipa']])
-    matched_transcripts_ipa = ' '.join([word[1] for word in result['real_and_transcribed_words_ipa']])
+    real_transcripts_ipa = " ".join([word[0] for word in result["real_and_transcribed_words_ipa"]])
+    matched_transcripts_ipa = " ".join([word[1] for word in result["real_and_transcribed_words_ipa"]])
 
-    real_transcripts = ' '.join([word[0] for word in result['real_and_transcribed_words']])
-    matched_transcripts = ' '.join([word[1] for word in result['real_and_transcribed_words']])
+    real_transcripts = " ".join([word[0] for word in result["real_and_transcribed_words"]])
+    matched_transcripts = " ".join([word[1] for word in result["real_and_transcribed_words"]])
 
     # Преобразование в нижний регистр для сравнения реальных слов
     words_real = real_transcripts.lower().split()
@@ -153,8 +158,12 @@ def process_transcription_result(result: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def audioread_load(path: str, offset: float = 0.0, duration: float = None, dtype: np.dtype = np.float32) -> Tuple[
-    np.ndarray, int]:
+def audioread_load(
+    path: str,
+    offset: float = 0.0,
+    duration: float | None = None,
+    dtype: np.dtype = npt.float32
+    ) -> tuple[npt.NDArray, int]:
     """
     Загружает аудиофайл с использованием библиотеки audioread и возвращает аудиосигнал и частоту дискретизации.
 
@@ -170,7 +179,7 @@ def audioread_load(path: str, offset: float = 0.0, duration: float = None, dtype
     Возвращает:
         tuple: Аудиосигнал в виде массива и частота дискретизации.
     """
-    y = []
+    y: list = []
     with audioread.audio_open(path) as input_file:
         sr_native = input_file.samplerate
         n_channels = input_file.channels
@@ -192,7 +201,7 @@ def audioread_load(path: str, offset: float = 0.0, duration: float = None, dtype
                 # Если достигли конца, выходим
                 break
             if s_end < n:
-                # Если конец аудиосигнала в этом кадре, обрезаем его
+                # Если конец аудио сигнала в этом кадре, обрезаем его
                 frame = frame[:s_end - n_prev]
             if n_prev <= s_start <= n:
                 # Если начало аудио в этом кадре, загружаем его
@@ -202,13 +211,13 @@ def audioread_load(path: str, offset: float = 0.0, duration: float = None, dtype
             y.append(frame)
 
     # Конкатенируем блоки в один массив
-    y = np.concatenate(y) if y else np.empty(0, dtype=dtype)
+    y_arr = np.concatenate(y) if y else np.empty(0, dtype=dtype)
 
     # Если сигнал многоканальный, преобразуем в нужный формат
     if n_channels > 1:
-        y = y.reshape((-1, n_channels)).T
+        y_arr = y_arr.reshape((-1, n_channels)).T
 
-    return y, sr_native
+    return y_arr, sr_native
 
 
 def buf_to_float(x: bytes, n_bytes: int = 2, dtype: np.dtype = np.float32) -> np.ndarray:
@@ -221,7 +230,7 @@ def buf_to_float(x: bytes, n_bytes: int = 2, dtype: np.dtype = np.float32) -> np
         dtype (np.dtype): Тип данных для выходного массива.
 
     Возвращает:
-        np.ndarray: Аудиосигнал в формате с плавающей точкой.
+        np.ndarray: Аудио сигнал в формате с плавающей точкой.
     """
     # Преобразование данных из байтов в целочисленные значения и последующее масштабирование
     scale = 1.0 / float(1 << (8 * n_bytes - 1))

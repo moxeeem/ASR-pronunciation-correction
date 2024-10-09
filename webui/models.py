@@ -1,71 +1,119 @@
 import torch
 import torch.nn as nn
-
 import pickle
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSeq2SeqLM
+)
+
+# Globals for storing models
+MODELS_ASR: dict[str, tuple[nn.Module, nn.Module]] = {}
+MODELS_TTS: dict[str, nn.Module] = {}
+MODELS_TRANSLATION: dict[str, tuple[AutoModelForSeq2SeqLM, AutoTokenizer]] = {}
+SUPPORTED_LANGUAGES = ["en", "fr", "de"]
 
 
-import pickle
+def preloadASRModels(languages: list[str]) -> None:
+    """
+    Preloads ASR (like Silero-STT) models weights
+    for specified language codes: "en", "fr", "de"
+    """
+    for lang_code in languages:
+        if lang_code not in SUPPORTED_LANGUAGES:
+            raise ValueError(
+                f"Unsupported language code: '{lang_code}'"
+            )
+
+        model, decoder, _ = torch.hub.load(
+            repo_or_dir="snakers4/silero-models",
+            model="silero_stt",
+            language=lang_code,
+            device="cpu",
+        )
+
+        MODELS_ASR[lang_code] = (model, decoder)
 
 
-def getASRModel(language: str) -> nn.Module:
+def getASRModel(
+    lang_code: str,
+    device: torch.device = torch.device("cpu")
+) -> tuple[nn.Module, nn.Module]:
+    if lang_code not in MODELS_ASR.keys():
+        raise ValueError(
+            f"ASR model for language '{lang_code}' not preloaded"
+        )
 
-    if language == 'de':
-
-        model, decoder, utils = torch.hub.load(repo_or_dir='snakers4/silero-models',
-                                               model='silero_stt',
-                                               language='de',
-                                               device=torch.device('cpu'))
-
-    elif language == 'en':
-        model, decoder, utils = torch.hub.load(repo_or_dir='snakers4/silero-models',
-                                               model='silero_stt',
-                                               language='en',
-                                               device=torch.device('cpu'))
-    elif language == 'fr':
-        model, decoder, utils = torch.hub.load(repo_or_dir='snakers4/silero-models',
-                                               model='silero_stt',
-                                               language='fr',
-                                               device=torch.device('cpu'))
-
-    return (model, decoder)
+    model, decoder = MODELS_ASR[lang_code]
+    # set device for ASR model
+    model.to(device)
+    return model, decoder
 
 
-def getTTSModel(language: str) -> nn.Module:
+def preloadTTSModels(
+    models_info: dict[str, str]
+) -> None:
+    for language, speaker in models_info.items():
+        model, _ = torch.hub.load(
+            repo_or_dir="snakers4/silero-models",
+            model="silero_tts",
+            language=language,
+            speaker=speaker,
+        )
+        MODELS_TTS[language] = model
 
-    if language == 'de':
 
-        speaker = 'thorsten_v2'  # 16 kHz
-        model, _ = torch.hub.load(repo_or_dir='snakers4/silero-models',
-                                  model='silero_tts',
-                                  language=language,
-                                  speaker=speaker)
+def get_model_TTS(
+    lang_code: str,
+    device: torch.device = torch.device("cpu")
+) -> nn.Module:
+    if lang_code not in MODELS_TTS:
+        raise ValueError(
+            f"TTS model for language '{lang_code}' not preloaded"
+        )
 
-    elif language == 'en':
-        speaker = 'lj_16khz'  # 16 kHz
-        model = torch.hub.load(repo_or_dir='snakers4/silero-models',
-                               model='silero_tts',
-                               language=language,
-                               speaker=speaker)
-    else:
-        raise ValueError('Language not implemented')
-
+    model = MODELS_TTS[lang_code]
+    model.to(device)
     return model
 
 
-def getTranslationModel(language: str) -> nn.Module:
-    from transformers import AutoTokenizer
-    from transformers import AutoModelForSeq2SeqLM
-    if language == 'de':
-        model = AutoModelForSeq2SeqLM.from_pretrained(
-            "Helsinki-NLP/opus-mt-de-en")
-        tokenizer = AutoTokenizer.from_pretrained(
-            "Helsinki-NLP/opus-mt-de-en")
-        # Cache models to avoid Hugging face processing
-        with open('translation_model_de.pickle', 'wb') as handle:
-            pickle.dump(model, handle)
-        with open('translation_tokenizer_de.pickle', 'wb') as handle:
-            pickle.dump(tokenizer, handle)
-    else:
-        raise ValueError('Language not implemented')
+def preloadTranslationModels(
+    lang_models_pairs: dict[str, str]
+) -> None:
+    for lang, model_name in lang_models_pairs.items():
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        MODELS_TRANSLATION[lang] = (model, tokenizer)
 
-    return model, tokenizer
+        # cache models for faster access
+        with open(f"translation_model_{lang}.pickle", "wb") as file_mod:
+            pickle.dump(model, file_mod)
+
+        with open(f"translation_tokenizer_{lang}.pickle", "wb") as file_tok:
+            pickle.dump(tokenizer, file_tok)
+
+
+def getTranslationModel(lang_code: str) -> tuple[
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer
+]:
+    if lang_code not in MODELS_TRANSLATION:
+        raise ValueError(
+            f"Translation model for language '{lang_code}' not preloaded"
+        )
+    
+    return MODELS_TRANSLATION[lang_code]
+
+
+# preload models
+preloadASRModels(["en", "de"])
+ASR_models_info = {
+        "de": "thorsten_v2",    # 16 kHz
+        "en": "lj_16khz",       # 16 kHz
+}
+
+preloadTTSModels(ASR_models_info)
+
+lang_model_pairs = {
+    "de": "Helsinki-NLP/opus-mt-de-en"
+}
+preloadTranslationModels(lang_model_pairs)

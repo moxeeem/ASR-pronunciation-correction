@@ -52,16 +52,33 @@ class TextDataset:
 
 # Инициализация глобальных переменных
 sample_folder = "./"
-lambda_database: Dict[str, TextDataset] = {}
-lambda_ipa_converter: Dict[str, Any] = {}
+lambda_database: dict[str, TextDataset] = {}
+lambda_ipa_converter: dict[str, Any] = {}
 
-with open(sample_folder + 'data_de_en_2.pickle', 'rb') as handle:
+with open(sample_folder + "data_de_en_2.pickle", "rb") as handle:
     df = pickle.load(handle)
 
-lambda_database['en'] = TextDataset(df, 'en')
+lambda_database["en"] = TextDataset(df, "en")
 lambda_translate_new_sample = False
+lambda_ipa_converter["en"] = RuleBasedModels.EngPhonemeConverter()
 
-lambda_ipa_converter['en'] = RuleBasedModels.EngPhonemConverter()
+def getSentenceCategory(sentence: str) -> int:
+    """
+    Returns category (int) of specified sentence
+    (categories based on words count in the sentence)
+    """
+    
+    words_count = len(sentence.split())
+    categories_word_limits = [0, 8, 20, 100_000]
+
+    for i, category_limit in enumerate(categories_word_limits):
+        if category_limit < words_count <= categories_word_limits[i + 1]:
+            return i + 1
+    
+    raise ValueError(
+        f"Passed sentence ({words_count} words) "
+        f"exceeds category word limit: {categories_word_limits[:-1]}"
+    )
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> str:
@@ -78,7 +95,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> str:
     body = json.loads(event['body'])
     category = int(body['category'])
     language = body['language']
-
     sample_in_category = False
 
     while not sample_in_category:
@@ -88,7 +104,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> str:
                 sample_idx = random.randint(0, len(lambda_database[language]) - 1)
                 current_transcript = lambda_database[language][sample_idx]
                 valid_sequence = True
-            except:
+            except Exception as _err:
                 pass
 
         sentence_category = getSentenceCategory(current_transcript[0])
@@ -99,27 +115,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> str:
     current_ipa = lambda_ipa_converter[language].convertToPhonem(current_transcript[0])
 
     result = {
-        'real_transcript': current_transcript,
-        'ipa_transcript': current_ipa,
-        'transcript_translation': translated_transcript
+        "real_transcript": current_transcript,
+        "ipa_transcript": current_ipa,
+        "transcript_translation": translated_transcript
     }
 
     return json.dumps(result)
 
-
-def getSentenceCategory(sentence: str) -> int:
-    """
-    Определяет категорию предложения на основе количества слов.
-
-    Аргументы:
-        sentence (str): Предложение для анализа.
-
-    Возвращает:
-        int: Категория предложения.
-    """
-    number_of_words = len(sentence.split())
-    categories_word_limits = [0, 8, 20, 100000]
-
-    for category in range(len(categories_word_limits) - 1):
-        if categories_word_limits[category] < number_of_words <= categories_word_limits[category + 1]:
-            return category + 1

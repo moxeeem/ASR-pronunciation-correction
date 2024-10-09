@@ -26,12 +26,16 @@ jobs:
           node-version: 22
       - name: Install Dependencies
         run: npm ci
+        with:
+          path: wiki/
+
       - name: Build Quartz
         run: npx quartz build wiki/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: wiki/public
  
   deploy:
     needs: build

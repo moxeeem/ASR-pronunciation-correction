@@ -2,6 +2,7 @@ import base64
 import json
 import time
 from typing import Any
+import os
 
 import audioread
 import numpy as np
@@ -162,7 +163,7 @@ def audioread_load(
     path: str,
     offset: float = 0.0,
     duration: float | None = None,
-    dtype: np.dtype = npt.float32
+    dtype: np.dtype = np.float32
     ) -> tuple[npt.NDArray, int]:
     """
     Загружает аудиофайл с использованием библиотеки audioread и возвращает аудиосигнал и частоту дискретизации.

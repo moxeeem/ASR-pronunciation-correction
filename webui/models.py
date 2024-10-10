@@ -53,12 +53,13 @@ def preloadTTSModels(
     models_info: dict[str, str]
 ) -> None:
     for language, speaker in models_info.items():
-        model, _ = torch.hub.load(
+        res = torch.hub.load(
             repo_or_dir="snakers4/silero-models",
             model="silero_tts",
             language=language,
             speaker=speaker,
         )
+        model = res[0]
         MODELS_TTS[language] = model
 
 
@@ -116,4 +117,5 @@ preloadTTSModels(ASR_models_info)
 lang_model_pairs = {
     "de": "Helsinki-NLP/opus-mt-de-en"
 }
+
 preloadTranslationModels(lang_model_pairs)

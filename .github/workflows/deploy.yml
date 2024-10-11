@@ -1,19 +1,19 @@
 name: Deploy Wiki to GH Pages
- 
+
 on:
   push:
     branches:
       - wiki
- 
+
 permissions:
   contents: read
   pages: write
   id-token: write
- 
+
 concurrency:
   group: "pages"
   cancel-in-progress: false
- 
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -24,19 +24,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Install Dependencies
+        working-directory: ./wiki
         run: npm ci
-        with:
-          path: wiki/
 
       - name: Build Quartz
-        run: npx quartz build wiki/
+        working-directory: ./wiki
+        run: npx quartz build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: wiki/public
- 
+
   deploy:
     needs: build
     environment:

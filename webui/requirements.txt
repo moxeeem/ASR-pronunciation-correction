@@ -3,7 +3,6 @@ torch
 torchaudio
 soundfile==0.10.3.post1
 omegaconf
-epitran
 audioread
 requests
 dtwalign

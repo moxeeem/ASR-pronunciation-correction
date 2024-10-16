@@ -251,25 +251,6 @@ files = [
 ]
 
 [[package]]
-name = "epitran"
-version = "1.25.1"
-summary = "Tools for transcribing languages into IPA."
-groups = ["default"]
-dependencies = [
-    "g2pk",
-    "jamo",
-    "marisa-trie",
-    "panphon>=0.20",
-    "regex",
-    "requests",
-    "setuptools",
-    "subprocess32; python_version < \"3.0\"",
-]
-files = [
-    {file = "epitran-1.25.1-py2.py3-none-any.whl", hash = "sha256:f3ab6a6c6d8360537cc18cf3ac84a6a2b40c79259337ec95883deea47f0c19a5"},
-]
-
-[[package]]
 name = "executing"
 version = "2.1.0"
 requires_python = ">=3.8"

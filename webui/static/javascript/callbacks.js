@@ -84,7 +84,7 @@ const UIError = () => {
     document.getElementById("ipa_script").innerHTML = "Error"
 
     document.getElementById("main_title").innerHTML = 'Server Error';
-    document.getElementById("original_script").innerHTML = 'Server error. Either the daily quota of the server is over or there was some internal error. You can try to generate a new sample in a few seconds. If the error persist, try comming back tomorrow or download the local version from Github :)';
+    document.getElementById("original_script").innerHTML = 'Server error. It appears there is some internal error.';
 };
 
 const UINotSupported = () => {

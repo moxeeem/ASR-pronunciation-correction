@@ -15,8 +15,7 @@ import WordMatching as wm
 import pronunciationTrainer as prTr
 
 # Инициализация тренера для английского языка
-trainer_SST_lambda: dict[str, prTr.PronunciationTrainer] = {}
-trainer_SST_lambda["en"] = prTr.getTrainer("en")
+trainer_SST_lambda: dict[str, prTr.PronunciationTrainer] = {"en": prTr.getTrainer("en")}
 
 # Преобразование частоты дискретизации аудиосигнала с 48kHz до 16kHz
 transform: Resample = Resample(

@@ -43,15 +43,9 @@
             <div class="horizontal-flexbox" style="display:flex; flex-direction: row;">
 
 
-                <p class="accuracy-text" style="font-size:1em; text-align: left; padding-top: 3px; padding-left: 5px;">
-                    Language: </p>
                 <!--dropbtn accuracy-text-->
                 <div class="dropdown">
-                    <button id="languageBox" class="dropbtn accuracy-text"
-                        style="font-size:1em; text-align: left; padding-top: 3px; padding-left: 0px;">German</button>
                     <div class="dropdown-content">
-                        <a href="javascript:changeLanguage('de',true)" class="accuracy-text"
-                            style="padding-top: 3px; ">German</a>
                         <a href="javascript:changeLanguage('en',true)" class="accuracy-text ;"
                             style="padding-top: 3px; ">English</a>
                     </div>
@@ -59,7 +53,7 @@
 
                 <p id="section_accuracy" class="accuracy-text"
                     style="text-align: left; color: black; font-size: larger;">
-                    | Score: 0
+                    Score: 0
                 </p>
 
             </div>
@@ -113,7 +107,7 @@
             </div>
 
             <div id="nextButtonDiv" style="position: absolute; left: 90%; top:0%; height: 100%;" class="flex-container">
-                <button id="buttonNext" class="expanded button-next" onclick="javascript:getNextSample()">
+                <button id="buttonNext" class="expanded button-next" onclick="javascript:getNextSample()"></button>>
                     <span></span></a>
             </div>
         </div>

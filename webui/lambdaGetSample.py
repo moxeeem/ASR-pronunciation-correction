@@ -1,7 +1,6 @@
 import pandas as pd
 import json
 import RuleBasedModels
-import epitran
 import random
 import pickle
 from typing import Dict, Any
@@ -32,9 +31,7 @@ class TextDataset:
         Возвращает:
             list: Список, содержащий предложение на выбранном языке.
         """
-        if self.language == 'de':
-            line = [self.table_dataframe['de_sentence'].iloc[idx]]
-        elif self.language == 'en':
+        if self.language == 'en':
             line = [self.table_dataframe['en_sentence'].iloc[idx]]
         else:
             line = [self.table_dataframe['sentence'].iloc[idx]]
@@ -62,19 +59,20 @@ lambda_database["en"] = TextDataset(df, "en")
 lambda_translate_new_sample = False
 lambda_ipa_converter["en"] = RuleBasedModels.EngPhonemeConverter()
 
+
 def getSentenceCategory(sentence: str) -> int:
     """
     Returns category (int) of specified sentence
     (categories based on words count in the sentence)
     """
-    
+
     words_count = len(sentence.split())
     categories_word_limits = [0, 8, 20, 100_000]
 
     for i, category_limit in enumerate(categories_word_limits):
         if category_limit < words_count <= categories_word_limits[i + 1]:
             return i + 1
-    
+
     raise ValueError(
         f"Passed sentence ({words_count} words) "
         f"exceeds category word limit: {categories_word_limits[:-1]}"
@@ -112,7 +110,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> str:
 
     translated_transcript = ""
 
-    current_ipa = lambda_ipa_converter[language].convertToPhonem(current_transcript[0])
+    current_ipa = lambda_ipa_converter[language].convertToPhoneme(current_transcript[0])
 
     result = {
         "real_transcript": current_transcript,
@@ -121,4 +119,3 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> str:
     }
 
     return json.dumps(result)
-

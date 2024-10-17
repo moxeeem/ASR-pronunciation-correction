@@ -5,7 +5,6 @@ import numpy as np
 import models as mo
 import WordMetrics
 import WordMatching as wm
-import epitran
 import ModelInterfaces as mi
 import AIModels
 import RuleBasedModels
@@ -22,15 +21,10 @@ def getTrainer(language: str) -> "PronunciationTrainer":
     asr_model = AIModels.NeuralASR(model, decoder)
 
     phoneme_converter: (
-        RuleBasedModels.EpitranPhonemeConverter
-        | RuleBasedModels.EngPhonemeConverter
+        RuleBasedModels.EngPhonemeConverter
     )
-    
-    if language == "de":
-        phoneme_converter = RuleBasedModels.EpitranPhonemeConverter(
-            epitran.Epitran("deu-Latn")
-        )
-    elif language == "en":
+
+    if language == "en":
         phoneme_converter = RuleBasedModels.EngPhonemeConverter()
     else:
         raise ValueError("Language not implemented")

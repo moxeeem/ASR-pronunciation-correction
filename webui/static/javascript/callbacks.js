@@ -27,7 +27,7 @@ let wordCategories;
 let startTime, endTime;
 
 // API related variables 
-let AILanguage = "de"; // Standard is German
+let AILanguage = "en"; // Standard is English
 
 
 let STScoreAPIKey = 'rll5QsTiv83nti99BW6uCmvs9BDVxSB39SVFceYb'; // Public Key. If, for some reason, you would like a private one, send-me a message and we can discuss some possibilities
@@ -196,7 +196,7 @@ const getNextSample = async () => {
                 document.getElementById("recorded_ipa_script").innerHTML = ""
                 document.getElementById("pronunciation_accuracy").innerHTML = "";
                 document.getElementById("single_word_ipa_pair").innerHTML = "Reference | Spoken"
-                document.getElementById("section_accuracy").innerHTML = "| Score: " + currentScore.toString() + " - (" + currentSample.toString() + ")";
+                document.getElementById("section_accuracy").innerHTML = "Score: " + currentScore.toString() + " - (" + currentSample.toString() + ")";
                 currentSample += 1;
 
                 document.getElementById("main_title").innerHTML = page_title;
@@ -252,16 +252,9 @@ const changeLanguage = (language, generateNewSample = false) => {
     languageFound = false;
     let languageIdentifier, languageName;
     switch (language) {
-        case 'de':
-
-            document.getElementById("languageBox").innerHTML = "German";
-            languageIdentifier = 'de';
-            languageName = 'Anna';
-            break;
 
         case 'en':
 
-            document.getElementById("languageBox").innerHTML = "English";
             languageIdentifier = 'en';
             languageName = 'Daniel';
             break;

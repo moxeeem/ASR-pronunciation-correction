@@ -5,14 +5,20 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/api/**': {
-      proxy: process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000/api/**" : "/api/**",
+      proxy: process.env.NODE_ENV === "development" ? "http://localhost:8000/api/**" : "/api/**",
     },
     '/docs': {
-      proxy: "http://127.0.0.1:8000/docs",
+      proxy: "http://localhost:8000/docs",
     },
     '/openapi.json': {
-      proxy: "http://127.0.0.1:8000/openapi.json",
+      proxy: "http://localhost:8000/openapi.json",
     }
+  },
+
+  runtimeConfig: {
+    public: {
+      baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+    },
   },
 
   nitro: {
@@ -30,5 +36,12 @@ export default defineNuxtConfig({
     "@nuxtjs/supabase",
     "@nuxt/ui",
     "@nuxtjs/tailwindcss"
-  ]
+  ],
+  supabase: {
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/register']
+    },
+  },
 })

@@ -44,7 +44,7 @@ const removeTask = async (task: Task) => {
 }
 
 const fetchTasksFromServerRoute = async () => {
-    const { data } = await useFetch('/api/tasks', { headers: useRequestHeaders(['cookie']), key: 'tasks-from-server' })
+    const { data } = await useFetch('/backend/tasks', { headers: useRequestHeaders(['cookie']), key: 'tasks-from-server' })
 
     tasksFromServer.value = data
     isModalOpen.value = true

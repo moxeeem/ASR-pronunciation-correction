@@ -32,6 +32,23 @@ export interface Database {
           user?: string
         }
       }
+      text_data: {
+        Row: {
+          text_id: number
+          en_sentence: string
+          sentence_length_group: string
+        }
+        Insert: {
+          text_id: number
+          en_sentence: string
+          sentence_length_group: string
+        }
+        Update: {
+          text_id: number
+          en_sentence: string
+          sentence_length_group: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

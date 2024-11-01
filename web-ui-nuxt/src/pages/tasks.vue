@@ -44,10 +44,28 @@ const removeTask = async (task: Task) => {
 }
 
 const fetchTasksFromServerRoute = async () => {
-    const { data } = await useFetch('/backend/tasks', { headers: useRequestHeaders(['cookie']), key: 'tasks-from-server' })
+    const { data } = await useFetch('/backend/tasks', { headers: useRequestHeaders(['cookie']), key: 'task-from-server' })
 
     tasksFromServer.value = data
     isModalOpen.value = true
+}
+
+const fetchTextFromServerRoute = async () => {
+    const { data } = await useFetch('/backend/text_data', { headers: useRequestHeaders(['cookie']), key: 'text-from-server' })
+
+    tasksFromServer.value = data
+    isModalOpen.value = true
+}
+
+const generateTask = async () => {
+    try {
+        const response = await fetch('http://localhost:3000/api/new');
+        const data = await response.json();
+        tasksFromServer.value = data;
+        isModalOpen.value = true;
+    } catch (error) {
+        console.error('Ошибка при получении данных:', error);
+    }
 }
 </script>
 
@@ -56,6 +74,7 @@ const fetchTasksFromServerRoute = async () => {
         <h1 class="mb-12 text-6xl font-bold">
             Все задачи
         </h1>
+        <UButton class="mt-6" label="Generate" @click="generateTask" />
         <form class="flex gap-2 my-2" @submit.prevent="addTask">
             <UInput v-model="newTask" :loading="loading" class="w-full" size="xl" variant="outline" type="text"
                 name="newTask" placeholder="Make a coffee" autofocus autocomplete="off" />
@@ -85,6 +104,8 @@ const fetchTasksFromServerRoute = async () => {
             </ul>
         </UCard>
         <UButton class="mt-6" label="Fetch tasks from Nuxt server route" @click="fetchTasksFromServerRoute" />
+        <div/>
+        <UButton class="mt-6" label="Fetch text from Nuxt server route" @click="fetchTextFromServerRoute" />
         <UModal v-model="isModalOpen">
             <UCard>
                 <h2 class="mb-4">

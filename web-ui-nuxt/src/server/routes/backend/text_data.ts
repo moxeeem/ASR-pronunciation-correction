@@ -5,7 +5,7 @@ import { serverSupabaseClient } from '#supabase/server'
 export default defineEventHandler(async (event) => {
   const client = await serverSupabaseClient<Database>(event);
 
-  const { data, error } = await client.from('Text_data').select('text_id')
+  const { data, error } = await client.from('Text_data').select('text_id, en_sentence, sentence_length_group')
   if (error) {
     throw createError({ statusMessage: error.message })
   }

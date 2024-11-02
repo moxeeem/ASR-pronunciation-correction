@@ -59,7 +59,7 @@ const fetchTextFromServerRoute = async () => {
 
 const generateTask = async () => {
     try {
-        const response = await useFetch('/api/get_sample', {
+        const { data, error } = await useFetch('/api/get_sample', {
             method: 'POST', // Use POST method
             headers: {
                 'Content-Type': 'application/json' // Set the headers for JSON
@@ -67,13 +67,17 @@ const generateTask = async () => {
             body: JSON.stringify({ sentence_length_group: 'small' }) // Send the data in the body
         });
 
-        const data = await response.json();
-        tasksFromServer.value = data;
+        if (error.value) {
+            console.error('Ошибка при получении данных:', error.value);
+            return;
+        }
+
+        tasksFromServer.value = data.value;
         isModalOpen.value = true;
     } catch (error) {
         console.error('Ошибка при получении данных:', error);
     }
-}
+};
 
 
 </script>

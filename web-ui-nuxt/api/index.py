@@ -1,7 +1,8 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from api.get_sample import get_sample_response
+from api.transcribe import transcribe_audio
 
 app = FastAPI()
 
@@ -22,16 +23,21 @@ async def get_sample(request: SentenceRequest):
     return JSONResponse(content=response_data)
 
 
-@app.get("/transcribe")
+@app.get("/api/transcribe")
 async def transcribe():
-    """
-    Возвращает фонемную транскрипцию аудио файла test.wav.
-    """
     file_path = (
-        "C:/Users/Asus/Desktop/ASR-model/test.wav"  # Укажите путь к вашему аудио файлу
+        "./test.wav"
     )
     transcription = transcribe_audio(file_path)
     return {"transcription": transcription}
+
+
+'''@app.post("/api/transcribe")
+async def transcribe(file: UploadFile = File(...)):
+    # Load and process the audio file
+    content = await file.read()
+    transcription = transcribe_audio(content)  # Replace with actual transcription logic
+    return {"transcription": transcription}'''
 
 
 @app.get("/api")

@@ -7,7 +7,7 @@ def get_phonetic_transcription(sentence: str) -> str:
     """
     transcription = phonemize(
         sentence,
-        language='en-us',
-        backend='espeak',
+        language="en-us",
+        backend="espeak",
     )
     return transcription

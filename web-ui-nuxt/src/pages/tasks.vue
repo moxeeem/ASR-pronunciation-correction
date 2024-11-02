@@ -59,7 +59,7 @@ const fetchTextFromServerRoute = async () => {
 
 const generateTask = async () => {
     try {
-        const response = await fetch('http://localhost:3000/api/getSample', {
+        const response = await useFetch('/api/get_sample', {
             method: 'POST', // Use POST method
             headers: {
                 'Content-Type': 'application/json' // Set the headers for JSON
@@ -114,7 +114,7 @@ const generateTask = async () => {
         </UCard>
         <UButton class="mt-6" label="Fetch tasks from Nuxt server route" @click="fetchTasksFromServerRoute" />
         <div/>
-        <UButton class="mt-6" label="Fetch text from Nuxt server route" @click="fetchTextFromServerRoute" />
+        <UButton class="mt-6" label="Fetch sentences from Nuxt server route" @click="fetchTextFromServerRoute" />
         <UModal v-model="isModalOpen">
             <UCard>
                 <h2 class="mb-4">

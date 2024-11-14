@@ -2,18 +2,20 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from api.get_sample import get_sample_response
-from api.transcribe import transcribe_audio
+import api.speech_to_score as speech_to_score
+from uuid import UUID
 
 app = FastAPI()
 
 
 class SentenceRequest(BaseModel):
-    sentence_length_group: str
+    difficulty_level: int
+    user_id: UUID
 
 
 @app.post("/api/get_sample")
 async def get_sample(request: SentenceRequest):
-    response_data = get_sample_response(request.sentence_length_group)
+    response_data = get_sample_response(request.difficulty_level, request.user_id)
 
     if not response_data:
         raise HTTPException(
@@ -23,21 +25,24 @@ async def get_sample(request: SentenceRequest):
     return JSONResponse(content=response_data)
 
 
-@app.get("/api/transcribe")
+'''@app.get("/api/transcribe")
 async def transcribe():
     file_path = (
         "./test.wav"
     )
     transcription = transcribe_audio(file_path)
-    return {"transcription": transcription}
-
-
-'''@app.post("/api/transcribe")
-async def transcribe(file: UploadFile = File(...)):
-    # Load and process the audio file
-    content = await file.read()
-    transcription = transcribe_audio(content)  # Replace with actual transcription logic
     return {"transcription": transcription}'''
+
+
+@app.post("/api/transcribe")
+async def transcribe(file: UploadFile = File(...)):
+    content = await file.read()
+
+    result = speech_to_score.get_transcription_result(content)
+
+    # transcription = transcribe_audio_from_file(audio_content)
+    
+    return {"result": result}
 
 
 @app.get("/api")

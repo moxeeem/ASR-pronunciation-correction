@@ -1,45 +1,103 @@
 import random
 from api.phoneme_converter import get_phonetic_transcription
-from api.supabase_queries import get_sentences_with_length
+# from api.supabase_queries import get_sentences_with_length
+from api.supabase_queries import *
+from uuid import UUID
+
+current_data = {}
+
+'''class SentenceStorage:
+    def __init__(self):
+        self.current_data = {}
+
+    def get_sample_response(self, difficulty_level: int, user_id: UUID) -> dict:
+        uncompleted_sentence_ids = get_uncompleted_sentence_ids(user_id)
+
+        if not uncompleted_sentence_ids:
+            self.current_data = {"error": "No data available for the specified category"}
+            return self.current_data
+
+        data = get_sentences_with_length(difficulty_level, uncompleted_sentence_ids)
+        records = data.data
+
+        random_record = random.choice(records)
+        content = random_record.get("content", "N/A")
+        ipa_transcription = random_record.get("ipa_transcription", "N/A")
+
+        self.current_data = {
+            "content": content,
+            "difficulty_level": difficulty_level,
+            "ipa_transcription": ipa_transcription,
+        }
+
+        return self.current_data
+
+    def get_current_data(self) -> dict:
+        """Функция для получения текущих данных."""
+        return self.current_data
+
+sentence_storage = SentenceStorage()
+
+sentence_storage.get_sample_response(difficulty_level=1, user_id=UUID("95be94d1-fd5c-46e8-89ca-2740cc64ca24"))
+current_data = sentence_storage.get_current_data()'''
 
 
-def get_sample_response(sentence_length_group: str) -> dict:
+'''def get_sample_response(difficulty_level: int) -> dict:
     """
     Возвращает JSON ответ со случайным предложением и его транскрипцией.
     """
     # Получаем данные из таблицы с предложениями напрямую из бд (Supabase)
     data = get_sentences_with_length(
-        sentence_length_group
+        difficulty_level
     )
     
     print("[DEBUG]", type(data), type(data.data))
 
-    # Преобразуем данные в список словарей
-    records = data.data  # Содержимое данных будет доступно через data.data
+    records = data.data  # Убедитесь, что это список словарей
 
-    # Фильтруем записи по категории sentence_length_group
-    filtered_records = [
-        record
-        for record in records
-        if record["sentence_length_group"] == sentence_length_group
-    ]
-
-    if not filtered_records:
+    if not records:
         return {"error": "No data available for the specified category"}
 
-    # Выбираем случайное предложение
-    random_record = random.choice(filtered_records)
-    en_sentence = random_record.get("en_sentence", "N/A")
-    sentence_length_group = random_record.get("sentence_length_group", "N/A")
+    random_record = random.choice(records)
+    content = random_record.get("content", "N/A")
+    ipa_transcription = random_record.get("ipa_transcription", "N/A")
 
-    # Получаем фонетическую транскрипцию
-    phonetic_transcription = get_phonetic_transcription(en_sentence)
-
-    # Формируем JSON-ответ
     response_data = {
-        "en_sentence": en_sentence,
-        "sentence_length_group": sentence_length_group,
-        "phonetic_transcription": phonetic_transcription,
+        "content": content,
+        "difficulty_level": difficulty_level,
+        "ipa_transcription": ipa_transcription,
     }
 
     return response_data
+'''
+
+
+def get_sample_response(difficulty_level: int, user_id: UUID) -> dict:
+    global current_data
+    # Получаем незавершенные предложения для пользователя
+    uncompleted_sentence_ids = get_uncompleted_sentence_ids(user_id)
+
+    # Если нет подходящих предложений
+    if not uncompleted_sentence_ids:
+        return {"error": "No data available for the specified category"}
+
+    # Получаем предложения из основной таблицы
+    data = get_sentences_with_length(difficulty_level, uncompleted_sentence_ids)
+    records = data.data
+
+    # Выбираем случайное предложение
+    random_record = random.choice(records)
+    content = random_record.get("content", "N/A")
+    ipa_transcription = random_record.get("ipa_transcription", "N/A")
+
+    current_data = {
+        "content": content,
+        "difficulty_level": difficulty_level,
+        "ipa_transcription": ipa_transcription,
+    }
+
+    return current_data
+
+
+get_sample_response(difficulty_level=1, user_id=UUID("95be94d1-fd5c-46e8-89ca-2740cc64ca24"))
+# print(current_data.get("ipa_transcription", "N/A"))

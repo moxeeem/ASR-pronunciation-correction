@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from api.get_sample import get_sample_response
@@ -35,13 +35,15 @@ async def transcribe():
 
 
 @app.post("/api/transcribe")
-async def transcribe(file: UploadFile = File(...)):
-    content = await file.read()
-
-    result = speech_to_score.get_transcription_result(content)
-
+async def transcribe(
+    audio: UploadFile = File(...),
+    text: str = Form(...),
+    ipa: str = Form(...),
+    arpabet: str = Form(...),
+):
+    audio_content = await audio.read()
+    result = speech_to_score.get_transcription_result(audio_content)
     # transcription = transcribe_audio_from_file(audio_content)
-    
     return {"result": result}
 
 

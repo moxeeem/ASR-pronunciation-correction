@@ -152,7 +152,7 @@ async function analyzePronunciation(audioBlob) {
     formData.append('ipa', props.sentence.ipa_transcription)
     formData.append('arpabet', props.sentence.arpabet_transcription)
 
-    const response = await fetch('/backend/pronunciation-analysis', {
+    const response = await fetch('/api/transcribe', {
       method: 'POST',
       body: formData
     })

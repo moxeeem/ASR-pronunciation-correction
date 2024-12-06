@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   srcDir: "src/",
 
   routeRules: {
@@ -18,6 +18,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseKey: process.env.SUPABASE_KEY
     },
   },
 
@@ -34,14 +36,17 @@ export default defineNuxtConfig({
 
   modules: [
     "@nuxtjs/supabase",
-    "@nuxt/ui",
+    // "@nuxt/ui",
     "@nuxtjs/tailwindcss"
   ],
   supabase: {
     redirectOptions: {
-      login: '/login',
+      login: '/auth/login',
       callback: '/confirm',
-      exclude: ['/register']
+      exclude: ['/', '/auth/register'],
     },
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_KEY,
   },
+  compatibilityDate: '2024-04-03',
 })

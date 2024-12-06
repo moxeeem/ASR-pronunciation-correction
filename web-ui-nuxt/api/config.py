@@ -22,4 +22,5 @@ SB_KEY: str = _env["SUPABASE_KEY"]
 
 # table that holds English sentences data
 #  in the DB of choice (Supabase for now)
-SENTENCES_TABLE = "Text_data"
+SENTENCES_TABLE = "sentences"
+PROGRESS_TABLE = "user_exercise_sentence_progress"

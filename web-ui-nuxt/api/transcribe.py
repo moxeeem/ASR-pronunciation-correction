@@ -1,32 +1,47 @@
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
 import torch
+import numpy as np
 import librosa
+import tempfile
+import os
 
-# Загрузка модели и процессора при инициализации модуля
-processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-xlsr-53-espeak-cv-ft")
-model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-xlsr-53-espeak-cv-ft")
+# Load the model and processor
+processor = Wav2Vec2Processor.from_pretrained("mrrubino/wav2vec2-large-xlsr-53-l2-arctic-phoneme")
+model = Wav2Vec2ForCTC.from_pretrained("mrrubino/wav2vec2-large-xlsr-53-l2-arctic-phoneme")
 
 
-def load_audio(file_path: str):
+def load_audio(audio_content):
     """
-    Загружает и нормализует аудиофайл до 16 кГц.
+    Loads and normalizes audio from a byte array to 16 kHz.
     """
-    audio, _ = librosa.load(file_path, sr=16000)
+    audio, _ = librosa.load(audio_content, sr=16000)
     return audio
 
 
-def transcribe_audio(file_path: str):
+def transcribe_audio(audio_content: np.ndarray):
     """
-    Обрабатывает аудиофайл и возвращает его фонемную транскрипцию.
+    Processes the audio and returns its phoneme transcription.
     """
-    # Загрузка и подготовка аудио
-    audio_input = load_audio(file_path)
-    # Токенизация
-    input_values = processor(audio_input, return_tensors="pt", padding=False).input_values
-    # Получение логитов и предсказаний
+    input_values = processor(audio_content, return_tensors="pt", padding=False).input_values
+    # Get logits and predictions
     with torch.no_grad():
         logits = model(input_values).logits
     predicted_ids = torch.argmax(logits, dim=-1)
-    # Декодирование
+    # Decoding
     transcription = processor.batch_decode(predicted_ids, clean_up_tokenization_spaces=True)
-    return transcription[0]  # Возвращаем только строку транскрипции
+    return transcription[0]  # Return only the transcription string
+
+
+def transcribe_audio_from_file(file_content):
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(file_content)
+        tmp_file.flush()
+        temp_file_path = tmp_file.name
+
+    try:
+        audio_np, sr = librosa.load(temp_file_path, sr=16000)
+        transcription = transcribe_audio(audio_np)
+    finally:
+        os.remove(temp_file_path)
+
+    return transcription

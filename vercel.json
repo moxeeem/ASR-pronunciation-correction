@@ -1,0 +1,13 @@
+{
+    "builds": [
+        {
+            "src": "web-ui-nuxt",
+            "use": "@vercel/nuxt"
+        }
+    ],
+    "ignoreBuildStep": [
+        "pyproject.toml",
+        "requirements.txt",
+        "poetry.lock"
+    ]
+}

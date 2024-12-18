@@ -1,7 +1,7 @@
-import api.get_sample
-from api.transcribe import transcribe_audio_from_file
+import pronunciation_api.get_sample
+from pronunciation_api.transcribe import transcribe_audio_from_file
 import numpy as np
-import api.WordMatching as wm
+import pronunciation_api.WordMatching as wm
 
 
 # def transcribe_audio(audio_content: np.ndarray):

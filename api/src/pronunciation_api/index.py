@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from api.get_sample import get_sample_response
-import api.speech_to_score as speech_to_score
+from pronunciation_api.get_sample import get_sample_response
+import pronunciation_api.speech_to_score as speech_to_score
 from uuid import UUID
 
 app = FastAPI()
@@ -28,7 +28,7 @@ async def get_sample(request: SentenceRequest):
 '''@app.get("/api/transcribe")
 async def transcribe():
     file_path = (
-        "./test.wav"
+        "./sample.wav"
     )
     transcription = transcribe_audio(file_path)
     return {"transcription": transcription}'''

@@ -2,7 +2,7 @@ import string
 import time
 import numpy as np
 import numpy.typing as npt
-import api.WordMetrics as WordMetrics
+import pronunciation_api.WordMetrics as WordMetrics
 
 from ortools.sat.python import cp_model
 # from utils import inspect_func

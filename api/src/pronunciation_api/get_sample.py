@@ -1,7 +1,7 @@
 import random
-from api.phoneme_converter import get_phonetic_transcription
+from pronunciation_api.phoneme_converter import get_phonetic_transcription
 # from api.supabase_queries import get_sentences_with_length
-from api.supabase_queries import *
+from pronunciation_api.supabase_queries import *
 from uuid import UUID
 
 current_data = {}

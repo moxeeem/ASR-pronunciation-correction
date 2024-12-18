@@ -2,7 +2,7 @@ from supabase import create_client, Client
 from uuid import UUID
 
 # from supabase.lib import APIResponse
-from api.config import SB_KEY, SB_URL, SENTENCES_TABLE
+from pronunciation_api.config import SB_KEY, SB_URL, SENTENCES_TABLE
 
 # создание клиента Supabase
 supabase: Client = create_client(

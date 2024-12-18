@@ -1,4 +1,4 @@
-from api.utils import try_get_env_vars
+from pronunciation_api.utils import try_get_env_vars
 
 _required = [
     "SUPABASE_URL",

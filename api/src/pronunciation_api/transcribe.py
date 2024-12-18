@@ -8,16 +8,18 @@ import os
 from pathlib import Path
 from enum import Enum
 
-LOCAL_MODEL_PATH = "C:\\Users\\morph\\Downloads\\my_phoneme_models\\checkpoint-2024.12.18-wav2vec2-phoneme\\final"
-
+from pronunciation_api.config import LOCAL_MODEL_PATH
 
 class LoadingMethod(str, Enum):
     FromHF = "model huggingface model"
     Locally = "model from local path"
 
+print("[info] Model local path", LOCAL_MODEL_PATH)
 
 def load_model(
-    method: LoadingMethod, hf_uri: str | None = None, local_path: Path | None = None
+    method: LoadingMethod,
+    hf_uri: str | None = None,
+    local_path: Path | None = None
 ) -> tuple[Wav2Vec2Processor, Wav2Vec2ForCTC]:
     match method:
         case LoadingMethod.FromHF:
@@ -45,12 +47,11 @@ def load_model(
             raise RuntimeError(f"Unsupported model loading method {method}")
 
 
-local_model_path = Path(LOCAL_MODEL_PATH)
 # Load the model and processor
 processor, model = load_model(
     LoadingMethod.Locally,
     # "mrrubino/wav2vec2-large-xlsr-53-l2-arctic-phoneme"
-    local_path=local_model_path,
+    local_path=Path(LOCAL_MODEL_PATH),
 )
 
 

@@ -1,7 +1,10 @@
 import random
 from pronunciation_api.phoneme_converter import get_phonetic_transcription
-# from api.supabase_queries import get_sentences_with_length
-from pronunciation_api.supabase_queries import *
+from pronunciation_api.supabase_queries import (
+    get_uncompleted_sentence_ids,
+    get_sentences_with_length
+)
+
 from uuid import UUID
 
 current_data = {}

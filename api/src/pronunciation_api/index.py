@@ -25,15 +25,6 @@ async def get_sample(request: SentenceRequest):
     return JSONResponse(content=response_data)
 
 
-'''@app.get("/api/transcribe")
-async def transcribe():
-    file_path = (
-        "./data/sample.wav"
-    )
-    transcription = transcribe_audio(file_path)
-    return {"transcription": transcription}'''
-
-
 @app.post("/api/transcribe")
 async def transcribe(
     audio: UploadFile = File(...),

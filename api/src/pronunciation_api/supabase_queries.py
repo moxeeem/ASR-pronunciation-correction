@@ -15,16 +15,6 @@ def get_all_sentences():
     return supabase.table(SENTENCES_TABLE).select("*").execute()
 
 
-'''def get_sentences_with_length(difficulty_level: int):
-    return (
-        supabase.table(SENTENCES_TABLE)
-        .select("*")
-        # фильтры: https://supabase.com/docs/reference/python/using-filters
-        .eq("difficulty_level", difficulty_level)
-        .execute()
-    )'''
-
-
 def get_uncompleted_sentence_ids(user_id: UUID):
     # Запрос для получения ID предложений, которые не завершены пользователем
     progress_response = (

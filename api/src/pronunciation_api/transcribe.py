@@ -1,5 +1,7 @@
 import os
+import re
 import tempfile
+from gruut import sentences
 from pathlib import Path
 from enum import Enum
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
@@ -9,6 +11,31 @@ import numpy as np
 import torch
 from pronunciation_api.config import LOCAL_MODEL_PATH
 import pprint
+
+
+def get_gruut_phonemes(eng_text: str) -> str:
+    # убираем знаки препинания
+    eng_text = re.sub(r"[^\w\s]", "", eng_text)
+
+    phonemes_list = []
+
+    # разбиваем текст на предложения и слова, затем получаем фонемы
+    for sent in sentences(
+        eng_text,
+        lang="en-US",
+        espeak=False,
+        punctuations=False,
+        major_breaks=False,
+        minor_breaks=False,
+    ):
+        for word in sent:
+            if word.phonemes:  # если есть фонемы
+                # объединяем фонемы слова без пробелов
+                phonemes_list.append("".join(word.phonemes))
+
+    # возвращаем строку: каждое слово разделено пробелом
+    phonemes_with_stress_marks = " ".join(phonemes_list)
+    return re.sub(r"[ˈˌ]", "", phonemes_with_stress_marks)
 
 
 class LoadingMethod(str, Enum):
@@ -71,26 +98,21 @@ def transcribe_audio(audio_content_as_ndarray: np.ndarray) -> str:
     Processes the audio and returns its phoneme transcription.
     """
     processed_res: BatchFeature = processor(
-        audio_content_as_ndarray,
-        return_tensors="pt",
-        padding=False
+        audio_content_as_ndarray, return_tensors="pt", padding=False
     )
     print("[debug] transcribe_audio processed_res is:")
     pprint.pp([type(processed_res), processed_res])
 
     input_values = processed_res.input_values
     pprint.pp([type(input_values), input_values])
-    
+
     # get logits and predictions
     with torch.no_grad():
         logits = model(input_values).logits
         print("[debug] logits:")
         pprint.pp([type(logits), logits])
 
-    predicted_ids = torch.argmax(
-        logits,
-        dim=-1
-    )
+    predicted_ids = torch.argmax(logits, dim=-1)
 
     # decoding
     transcription: list[str] = processor.batch_decode(
@@ -115,3 +137,7 @@ def transcribe_audio_via_tempfile(file_content: bytes) -> str:
         os.remove(temp_file_path)
 
     return transcription
+
+
+if __name__ == "__main__":
+    print(get_gruut_phonemes("This is a test massage!"))

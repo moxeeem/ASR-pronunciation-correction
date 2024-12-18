@@ -1,8 +1,7 @@
 import string
 import time
 import numpy as np
-import numpy.typing as npt
-import pronunciation_api.WordMetrics as WordMetrics
+import pronunciation_api.word_metrics as w_metrics
 
 from ortools.sat.python import cp_model
 # from utils import inspect_func
@@ -15,7 +14,7 @@ TIME_THRESHOLD_MAPPING = 5.0
 def get_word_distance_matrix(
         words_estimated: str,
         words_real: str
-) -> npt.NDArray[np.float64]:
+) -> np.ndarray[np.float64]:
     number_of_real_words = len(words_real)
     number_of_estimated_words = len(words_estimated)
 
@@ -28,7 +27,7 @@ def get_word_distance_matrix(
 
     for idx_estimated in range(number_of_estimated_words):
         for idx_real in range(number_of_real_words):
-            word_distance_matrix[idx_estimated, idx_real] = WordMetrics.edit_distance_python(
+            word_distance_matrix[idx_estimated, idx_real] = w_metrics.edit_distance_numpy(
                 words_estimated[idx_estimated],
                 words_real[idx_real]
             )
@@ -45,7 +44,7 @@ def get_word_distance_matrix(
 
 def get_best_path_from_distance_matrix(
         word_distance_matrix: np.ndarray
-) -> npt.NDArray[np.int_]:
+) -> np.ndarray[np.int_]:
     modelCpp = cp_model.CpModel()
 
     number_of_estimated_words: int = word_distance_matrix.shape[0] - 1
@@ -171,7 +170,7 @@ def get_resulting_string(
                 if idx_above_word:
                     continue
 
-                error_word = WordMetrics.edit_distance_python(
+                error_word = w_metrics.edit_distance_numpy(
                     words_estimated[single_word_idx],
                     words_real[word_idx]
                 )
@@ -198,7 +197,7 @@ def get_best_mapped_words(
     )
 
     start = time.time()
-    mapped_indices: npt.NDArray[np.int_] = get_best_path_from_distance_matrix(
+    mapped_indices: np.ndarray[np.int_] = get_best_path_from_distance_matrix(
         word_distance_matrix
     )
 

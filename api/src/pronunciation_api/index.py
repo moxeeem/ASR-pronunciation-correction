@@ -25,6 +25,16 @@ async def get_sample(request: SentenceRequest):
     return JSONResponse(content=response_data)
 
 
+@app.post("/api/transcribe_audio")
+async def transcribe_audio(
+    audio: UploadFile = File(...)
+):
+    audio_content: bytes = await audio.read()
+    result = speech_to_score.get_transcription_result(audio_content)
+    # transcription = transcribe_audio_from_file(audio_content)
+    return {"result": result}
+
+
 @app.post("/api/transcribe")
 async def transcribe(
     audio: UploadFile = File(...),
@@ -33,21 +43,13 @@ async def transcribe(
     arpabet: str = Form(...),
 ):
     audio_content = await audio.read()
+    print(f"[info] {type(audio_content)}")
+
     result = speech_to_score.get_transcription_result(audio_content)
     # transcription = transcribe_audio_from_file(audio_content)
     return {"result": result}
 
 
-@app.get("/api")
-def hello_world():
-    return {"message": "Hello World", "api": "Python"}
-
-
 @app.get("/api/test")
 def test():
     return {"message": "Test"}
-
-
-@app.get("/api/new")
-def new_function():
-    return {"message": "Это новая функция", "api": "Python API"}

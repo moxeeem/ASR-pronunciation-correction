@@ -2,7 +2,7 @@ import random
 from pronunciation_api.phoneme_converter import get_phonetic_transcription
 from pronunciation_api.supabase_queries import (
     get_uncompleted_sentence_ids,
-    get_sentences_with_length
+    get_sentences_with_length,
 )
 
 from uuid import UUID
@@ -102,5 +102,9 @@ def get_sample_response(difficulty_level: int, user_id: UUID) -> dict:
     return current_data
 
 
-get_sample_response(difficulty_level=1, user_id=UUID("95be94d1-fd5c-46e8-89ca-2740cc64ca24"))
-# print(current_data.get("ipa_transcription", "N/A"))
+if __name__ == "__main__":
+    get_sample_response(
+        difficulty_level=1, user_id=UUID("95be94d1-fd5c-46e8-89ca-2740cc64ca24")
+    )
+
+    # print(current_data.get("ipa_transcription", "N/A"))

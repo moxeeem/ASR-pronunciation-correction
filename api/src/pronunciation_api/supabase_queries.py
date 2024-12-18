@@ -1,5 +1,7 @@
 from supabase import create_client, Client
 from uuid import UUID
+import pprint
+from postgrest.base_request_builder import APIResponse
 
 # from supabase.lib import APIResponse
 from pronunciation_api.config import SB_KEY, SB_URL, SENTENCES_TABLE
@@ -10,6 +12,11 @@ supabase: Client = create_client(
     supabase_key=SB_KEY
 )
 
+def get_sentence_by_id(sentence_id: UUID) -> list[dict]:
+    res: APIResponse = supabase.table(
+        SENTENCES_TABLE
+    ).select("*").eq("id", sentence_id).execute()
+    return res.data
 
 def get_all_sentences():
     return supabase.table(SENTENCES_TABLE).select("*").execute()
@@ -44,3 +51,5 @@ def get_sentences_with_length(length_group: int, uncompleted_sentence_ids: list)
 
 # print(get_uncompleted_sentence_ids(UUID("95be94d1-fd5c-46e8-89ca-2740cc64ca24")))
 # print(get_sentences_with_length(1))
+if __name__ == "__main__":
+    pprint.pp(get_sentence_by_id(UUID("11693b19-e25b-4b2a-8e5f-d0595f685d77")))

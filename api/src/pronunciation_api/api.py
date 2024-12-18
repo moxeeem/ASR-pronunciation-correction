@@ -2,14 +2,14 @@ from fastapi import FastAPI, Form, File, UploadFile, HTTPException
 # from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from pronunciation_api.transcribe import transcribe_audio_from_file
+from pronunciation_api.transcribe import transcribe_audio_via_tempfile
 from pronunciation_api.phoneme_converter import get_phonetic_transcription
 from pronunciation_api.speech_to_score import get_transcription_result
 
 app = FastAPI(
     title="Speech Pronunciation Assessment API",
     description="API для оценки произношения и получения фонетической транскрипции",
-    version="0.0.1",
+    version="0.1.0",
 )
 
 

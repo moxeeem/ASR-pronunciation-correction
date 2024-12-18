@@ -10,13 +10,23 @@ authors = [
     { name = "Victor Khovanov",     email = "victorkhovtko@gmail.com" },
 ]
 
-dependencies = []
+dependencies = [
+    "fastapi[standard]>=0.115.6",
+    "python-dotenv>=1.0.1",
+    "torch>=2.5.1",
+    "supabase>=2.10.0",
+    "librosa>=0.10.2.post1",
+    "transformers>=4.46.2",
+    "phonemizer>=3.3.0",
+    "ortools>=9.11.4210",
+    "dtwalign>=0.1.1",
+]
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "MIT" }
 
 
-# Additional configuration for poetry (https://python-poetry.org/docs/pyproject/) 
+# additional conf. for poetry (https://python-poetry.org/docs/pyproject/) 
 [tool.poetry]
 name = "pronunciation-api"
 version = "0.1.0"
@@ -47,11 +57,11 @@ dtwalign        = "^0.1.1"
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
-# (!) UNCOMMENT FOR USING POETRY for package building 
-# [build-system]
-# requires = ["poetry-core"]
-# build-backend = "poetry.core.masonry.api"
-
 
 [tool.pdm]
 distribution = true
+
+# (!) UNCOMMENT for using POETRY (and comment lines above) for package building 
+# [build-system]
+# requires = ["poetry-core"]
+# build-backend = "poetry.core.masonry.api"

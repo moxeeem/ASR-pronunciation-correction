@@ -6,7 +6,7 @@ import pronunciation_api.WordMatching as wm
 
 # def transcribe_audio(audio_content: np.ndarray):
 def get_current_text_transcription():
-    current_text_transcription = api.get_sample.current_data.get("ipa_transcription", "N/A")  # "ðɪs ɪz ɐ tɛst mɛsɪdʒ"
+    current_text_transcription = pronunciation_api.get_sample.current_data.get("ipa_transcription", "N/A")  # "ðɪs ɪz ɐ tɛst mɛsɪdʒ"
     return current_text_transcription
 
 

@@ -28,7 +28,7 @@ async def get_sample(request: SentenceRequest):
 '''@app.get("/api/transcribe")
 async def transcribe():
     file_path = (
-        "./sample.wav"
+        "./data/sample.wav"
     )
     transcription = transcribe_audio(file_path)
     return {"transcription": transcription}'''

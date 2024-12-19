@@ -1,3 +1,4 @@
+import pprint
 from uuid import UUID
 from fastapi import FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,6 +50,8 @@ async def transcribe(
         real_text=sentence["content"],
         transcription_actual=sentence["ipa_transcription"],
     )
+    print(f"[DEBUG] got sentence_id: {sentence_id}, audio: {audio}")
+    pprint.pp({"result": result})
     return {"result": result}
 
 

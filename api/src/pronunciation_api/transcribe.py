@@ -36,7 +36,7 @@ def transcribe_audio(
 
     # get logits and predictions
     with torch.no_grad():
-        logits = phonetic_model(input_values).logits
+        logits: torch.Tensor = phonetic_model(input_values).logits
         print("[debug] logits:")
         pprint.pp([type(logits), logits])
 

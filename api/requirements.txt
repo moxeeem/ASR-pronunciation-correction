@@ -1,0 +1,14 @@
+torch>=2.5.1
+supabase>=2.10.0
+fastapi[standard]>=0.115.6
+librosa>=0.10.2.post1
+transformers>=4.46.2
+phonemizer>=3.3.0
+ortools>=9.11.4210
+dtwalign>=0.1.1
+python-dotenv>=1.0.1
+uvicorn[standard]>=0.34.0
+gruut>=2.4.0
+
+# install this package as "editable"
+-e .

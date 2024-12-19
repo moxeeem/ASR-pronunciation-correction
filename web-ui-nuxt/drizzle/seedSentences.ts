@@ -30,7 +30,7 @@ async function seedSentences() {
     parse({
       delimiter: ';',
       columns: true, // Использовать первую строку как заголовок столбцов
-      skip_empty_lines: true
+      skip_empty_lines: true,
     })
   );
 
@@ -64,5 +64,5 @@ async function seedSentences() {
 
 // Вызов функции заполнения
 seedSentences()
-  .then(() => console.log("Скрипт завершен"))
-  .catch((error) => console.error("Ошибка выполнения скрипта:", error));
+  .then(() => console.log('Скрипт завершен'))
+  .catch((error) => console.error('Ошибка выполнения скрипта:', error));

@@ -1,82 +1,25 @@
 <script setup>
 const supabase = useSupabaseClient()
-const user = useSupabaseUser()
 const exercises = ref([])
-const completedExercises = ref([])
 const loading = ref(true)
 
 onMounted(async () => {
   try {
-    // Fetch all exercises with their progress
-    const { data: progressData, error: progressError } = await supabase
-      .from('user_progress')
-      .select(`
-        exercise_id,
-        completion_status,
-        rating,
-        exercises (
-          id,
-          title,
-          description,
-          created_at,
-          updated_at,
-          exercise_sentences!inner (
-            sentence:sentences (
-              id
-            )
-          )
-        )
-      `)
-      .eq('user_id', user.value.id)
-
-    if (progressError) throw progressError
-
-    // Separate completed and uncompleted exercises
-    const allExercises = progressData.map(progress => ({
-      id: progress.exercises.id,
-      title: progress.exercises.title,
-      description: progress.exercises.description,
-      createdAt: progress.exercises.created_at,
-      updatedAt: progress.exercises.updated_at,
-      sentenceCount: progress.exercises.exercise_sentences.length,
-      status: progress.completion_status,
-      rating: progress.rating
-    }))
-
-    completedExercises.value = allExercises.filter(ex => ex.status === 'done')
-    exercises.value = allExercises.filter(ex => ex.status !== 'done')
-
-    // Fetch exercises without progress to add them to available exercises
-    const { data: newExercises, error: newExError } = await supabase
+    // Fetch exercises with their sentence counts
+    const { data, error } = await supabase
       .from('exercises')
       .select(`
-        id,
-        title,
-        description,
-        created_at,
-        updated_at,
-        exercise_sentences!inner (
-          sentence:sentences (
-            id
-          )
-        )
+        *,
+        exercise_sentences (count)
       `)
-      .not('id', 'in', `(${allExercises.map(e => e.id).join(',')})`)
-
-    if (!newExError && newExercises) {
-      exercises.value = [
-        ...exercises.value,
-        ...newExercises.map(ex => ({
-          id: ex.id,
-          title: ex.title,
-          description: ex.description,
-          createdAt: ex.created_at,
-          updatedAt: ex.updated_at,
-          sentenceCount: ex.exercise_sentences.length,
-          status: 'not started'
-        }))
-      ]
-    }
+    
+    if (error) throw error
+    
+    // Transform the data to include sentence count
+    exercises.value = data.map(exercise => ({
+      ...exercise,
+      sentenceCount: exercise.exercise_sentences[0]?.count || 0
+    }))
   } catch (err) {
     console.error('Error fetching exercises:', err)
   } finally {
@@ -117,7 +60,7 @@ onMounted(async () => {
                   :to="`/exercise/${exercise.id}`"
                   class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                 >
-                  {{ exercise.status === 'in_progress' ? 'Continue' : 'Start' }} Exercise
+                  Start Exercise
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                   </svg>
@@ -126,11 +69,6 @@ onMounted(async () => {
             </div>
           </div>
         </section>
-
-        <CompletedExercises
-          v-if="completedExercises.length > 0"
-          :completed-exercises="completedExercises"
-        />
       </div>
     </div>
   </div>

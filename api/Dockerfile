@@ -24,4 +24,4 @@ COPY .env ./
 WORKDIR /app/src
 
 # команда запуска FastAPI сервера через uvicorn
-CMD ["uvicorn", "pronunciation_api.new_index:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "pronunciation_api.api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

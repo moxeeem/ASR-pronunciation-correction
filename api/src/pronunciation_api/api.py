@@ -10,15 +10,15 @@ from pronunciation_api.config import (
 
 
 # create model container - keeps processor and model together
-model_container = PhoneticTranscriptionModelContainer()
+ipa_model_container = PhoneticTranscriptionModelContainer()
 
 print("[info] Model local path", LOCAL_MODEL_PATH)
 if LOCAL_MODEL_PATH is None:
     raise RuntimeError("LOCAL_MODEL_PATH environment variable WAS NOT SET!")
 
 # load model for IPA phonetic transcription
-model_container.load_from_path(LOCAL_MODEL_PATH)
-print(f"[debug] IPA Model loaded {model_container.is_loaded}")
+ipa_model_container.load_from_path(LOCAL_MODEL_PATH)
+print(f"[debug] IPA Model loaded {ipa_model_container.is_loaded}")
 
 app = FastAPI()
 
@@ -32,7 +32,7 @@ async def transcribe(
     # TODO: check if get_sentence_by_id(sentence_id) returns non-empty list
     sentence = get_sentence_by_id(sentence_id)[0]
     result = speech_to_score_api.get_transcription_result(
-        model_container,
+        ipa_model_container,
         audio_content,
         real_text=sentence["content"],
         transcription_actual=sentence["ipa_transcription"],

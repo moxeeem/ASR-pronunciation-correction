@@ -1,3 +1,4 @@
+import pprint
 import random
 # from pronunciation_api.phoneme_converter import get_gruut_phonemes
 from pronunciation_api.supabase_queries import (
@@ -21,7 +22,7 @@ def get_sample_response(difficulty_level: int, user_id: UUID) -> dict:
 
     # Получаем предложения из основной таблицы
     data = get_sentences_with_length(difficulty_level, uncompleted_sentence_ids)
-    records = data.data
+    records = data
 
     # Выбираем случайное предложение
     random_record = random.choice(records)
@@ -38,8 +39,9 @@ def get_sample_response(difficulty_level: int, user_id: UUID) -> dict:
 
 
 if __name__ == "__main__":
-    get_sample_response(
-        difficulty_level=1, user_id=UUID("95be94d1-fd5c-46e8-89ca-2740cc64ca24")
+    pprint.pp(
+        get_sample_response(
+            difficulty_level=1,
+            user_id=UUID("95be94d1-fd5c-46e8-89ca-2740cc64ca24")
+        )
     )
-
-    # print(current_data.get("ipa_transcription", "N/A"))

@@ -22,6 +22,7 @@ if not _all_loaded:
 SB_URL: str             = _env["SUPABASE_URL"]
 SB_KEY: str             = _env["SUPABASE_KEY"]
 
+# print(f"[DEBUG] SUPABASE: URL, KEY: {SB_URL} {SB_KEY}")
 # Local path (specify if needed)
 LOCAL_MODEL_PATH: str | None = os.environ.get("LOCAL_MODEL_PATH")
 

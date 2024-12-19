@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, File, Form, UploadFile
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+# from fastapi.responses import JSONResponse
+# from pydantic import BaseModel
 from pronunciation_api.supabase_queries import get_sentence_by_id
 from pronunciation_api.phoneme_converter import get_gruut_phonemes
 import pronunciation_api.speech_to_score as speech_to_score_api

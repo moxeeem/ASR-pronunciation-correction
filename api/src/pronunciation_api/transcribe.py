@@ -1,7 +1,5 @@
 import os
-import re
 import tempfile
-from gruut import sentences
 from pathlib import Path
 from enum import Enum
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
@@ -11,31 +9,6 @@ import numpy as np
 import torch
 from pronunciation_api.config import LOCAL_MODEL_PATH
 import pprint
-
-
-def get_gruut_phonemes(eng_text: str) -> str:
-    # убираем знаки препинания
-    eng_text = re.sub(r"[^\w\s]", "", eng_text)
-
-    phonemes_list = []
-
-    # разбиваем текст на предложения и слова, затем получаем фонемы
-    for sent in sentences(
-        eng_text,
-        lang="en-US",
-        espeak=False,
-        punctuations=False,
-        major_breaks=False,
-        minor_breaks=False,
-    ):
-        for word in sent:
-            if word.phonemes:  # если есть фонемы
-                # объединяем фонемы слова без пробелов
-                phonemes_list.append("".join(word.phonemes))
-
-    # возвращаем строку: каждое слово разделено пробелом
-    phonemes_with_stress_marks = " ".join(phonemes_list)
-    return re.sub(r"[ˈˌ]", "", phonemes_with_stress_marks)
 
 
 class LoadingMethod(str, Enum):
@@ -84,11 +57,11 @@ processor, model = load_model(
 )
 
 
-def load_audio(audio_content) -> np.ndarray:
+def load_audio(audio_content: bytes) -> np.ndarray:
     """
     Loads and normalizes audio from a byte array to 16 kHz.
     """
-    print(f"[info] (load_audio) audio_content is {type(audio_content)}")
+    
     audio, _ = librosa.load(audio_content, sr=16000)
     return audio
 
@@ -137,7 +110,3 @@ def transcribe_audio_via_tempfile(file_content: bytes) -> str:
         os.remove(temp_file_path)
 
     return transcription
-
-
-if __name__ == "__main__":
-    print(get_gruut_phonemes("This is a test massage!"))

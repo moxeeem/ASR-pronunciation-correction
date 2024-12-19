@@ -1,5 +1,7 @@
 from uuid import UUID
 from fastapi import FastAPI, HTTPException, File, Form, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+
 from pronunciation_api.supabase_queries import get_sentence_by_id
 from pronunciation_api.phoneme_converter import get_gruut_phonemes
 import pronunciation_api.speech_to_score as speech_to_score_api
@@ -22,6 +24,16 @@ print(f"[debug] IPA Model loaded {ipa_model_container.is_loaded}")
 
 app = FastAPI()
 
+# подключаем CORS
+app.add_middleware(
+    CORSMiddleware,
+                            # разрешённые источники
+    allow_origins=["*"],
+                            # TODO: в данный момент разрешено всё - нужно поставить сюда BACKEND_API_URL 
+    allow_credentials=True, # разрешить передачу cookies и авторизации
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],    # разрешённые заголовки (например, Authorization, Content-Type)
+)
 
 @app.post("/api/transcribe_sentence")
 async def transcribe(

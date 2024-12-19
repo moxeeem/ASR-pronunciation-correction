@@ -59,6 +59,7 @@ def transcribe_audio_via_tempfile(
         tmp_file.write(file_content)
         tmp_file.flush()
         temp_file_path = tmp_file.name
+        print("TEMP FILE at:", temp_file_path)
 
     try:
         audio_np_arr, sr = librosa.load(temp_file_path, sr=16000)

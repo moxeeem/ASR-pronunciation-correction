@@ -1,3 +1,5 @@
+import os
+import datetime as dt
 import pprint
 from uuid import UUID
 from fastapi import FastAPI, HTTPException, File, Form, UploadFile
@@ -42,6 +44,19 @@ async def transcribe(
     sentence_id: UUID = Form(...),
 ):
     audio_content: bytes = await audio.read()
+    # временно сохрани аудиофайл для проверки
+    os.makedirs("test_audios", exist_ok=True)
+    
+    # создаём директорию, если её нет
+    file_path = os.path.join(
+        "test_audios",
+        f"{dt.datetime.now().strftime("%Y%m%d-%H%M%S")}{sentence_id}_{audio.filename}"
+    )
+    with open(file_path, "wb") as f:
+        f.write(audio_content)
+    
+    print(f"[DEBUG] Аудиофайл сохранён в: {file_path}")
+    
     # TODO: check if get_sentence_by_id(sentence_id) returns non-empty list
     sentence = get_sentence_by_id(sentence_id)[0]
     result = speech_to_score_api.get_transcription_result(

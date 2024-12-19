@@ -1,15 +1,23 @@
-import pprint
 from pronunciation_api.transcribe import transcribe_audio_via_tempfile
 import pronunciation_api.word_matching as wm
+from pronunciation_api.config import PhoneticTranscriptionModelContainer
+import pprint
 
 
 def get_transcription_result(
+    model_container: PhoneticTranscriptionModelContainer,
     audio_content: bytes,
     real_text: str,
     transcription_actual: str
 ):
-    print(f"[info] (get_transcription_result) {type(audio_content)}")
-    transcription_IPA = transcribe_audio_via_tempfile(audio_content)
+    if not model_container.is_loaded:
+        raise RuntimeError("You need to load model first; - model was not loaded!")
+    
+    transcription_IPA = transcribe_audio_via_tempfile(
+        model_container.processor,
+        model_container.model,
+        audio_content
+    )
     words_ph_real: list[str] = transcription_actual.lower().split()
     words_estimated: list[str] = transcription_IPA.split()
 

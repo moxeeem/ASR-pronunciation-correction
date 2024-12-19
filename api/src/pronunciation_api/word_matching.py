@@ -165,7 +165,8 @@ def get_resulting_string(
 
 
 def get_best_mapped_words(
-    words_estimated: list[str], words_real: list[str]
+    words_estimated: list[str],
+    words_real: list[str]
 ) -> tuple[list[str], list[int]]:
     word_distance_matrix = get_word_distance_matrix(
         words_estimated,

@@ -162,3 +162,9 @@ cython_debug/
 #.idea/
 
 .vscode/
+
+# ignore model directory
+model/
+
+# ignore data (.wav and other audio files) directories
+data/

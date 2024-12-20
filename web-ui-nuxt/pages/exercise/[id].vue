@@ -9,18 +9,7 @@ const sentences = ref([])
 const currentSentenceIndex = ref(0)
 const loading = ref(true)
 const currentScore = ref(null)
-const skippedSentences = ref([])
-const showRatingModal = ref(false)
-const isFirstCompletion = ref(false)
-
-// Add computed properties for better state management
-const completedSentences = computed(() => 
-  sentences.value.filter(s => s.status === 'completed').length
-)
-
-const isExerciseCompleted = computed(() =>
-  completedSentences.value === sentences.value.length
-)
+const skippedSentences = ref([]) // Initialize as empty array
 
 onMounted(async () => {
   try {
@@ -34,7 +23,7 @@ onMounted(async () => {
     if (exerciseError) throw exerciseError
     exercise.value = exerciseData
 
-    // First, get all sentences for this exercise
+    // Fetch related sentences through the junction table
     const { data: sentenceData, error: sentenceError } = await supabase
       .from('exercise_sentences')
       .select(`
@@ -53,62 +42,18 @@ onMounted(async () => {
       .eq('exercise_id', route.params.id)
 
     if (sentenceError) throw sentenceError
+    sentences.value = sentenceData.map(item => item.sentences)
 
-    // Then, get progress for these sentences
-    const sentenceIds = sentenceData.map(item => item.sentences.id)
+    // Fetch user progress
     const { data: progressData, error: progressError } = await supabase
-      .from('user_exercise_sentence_progress')
-      .select('*')
-      .eq('user_id', user.value.id)
-      .eq('exercise_id', route.params.id)
-      .in('sentence_id', sentenceIds)
-
-    if (progressError && progressError.code !== 'PGRST116') {
-      throw progressError
-    }
-
-    // Get exercise progress to check if it was completed before
-    const { data: exerciseProgress, error: exerciseProgressError } = await supabase
       .from('user_progress')
       .select('*')
-      .eq('user_id', user.value.id)
+      .eq('user_id', user.value?.id)
       .eq('exercise_id', route.params.id)
       .single()
 
-    const wasCompletedBefore = exerciseProgress?.completion_status === 'done'
-
-    // Combine sentence data with progress
-    const processedSentences = sentenceData.map(item => ({
-      ...item.sentences,
-      status: progressData?.find(p => p.sentence_id === item.sentences.id)?.status || 'not attempted'
-    }))
-
-    // If exercise was completed before, include all sentences
-    // If it's in progress, only include non-completed sentences
-    sentences.value = wasCompletedBefore 
-      ? processedSentences
-      : processedSentences.filter(s => s.status !== 'completed')
-
-    // Find the first non-completed sentence or start from beginning if all were completed
-    currentSentenceIndex.value = sentences.value.findIndex(s => s.status !== 'completed')
-    if (currentSentenceIndex.value === -1) currentSentenceIndex.value = 0
-
-    // Initialize progress tracking
-    if (!exerciseProgress) {
-      isFirstCompletion.value = true
-      const { error: createError } = await supabase
-        .from('user_progress')
-        .insert({
-          user_id: user.value.id,
-          exercise_id: route.params.id,
-          completion_status: 'not started',
-          sentences_skipped: []
-        })
-
-      if (createError) throw createError
-      skippedSentences.value = []
-    } else {
-      skippedSentences.value = exerciseProgress.sentences_skipped || []
+    if (!progressError && progressData?.sentences_skipped) {
+      skippedSentences.value = progressData.sentences_skipped
     }
   } catch (err) {
     console.error('Error fetching exercise:', err)
@@ -116,74 +61,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-async function updateSentenceProgress(sentenceId, status) {
-  try {
-    await supabase
-      .from('user_exercise_sentence_progress')
-      .upsert({
-        user_id: user.value.id,
-        exercise_id: route.params.id,
-        sentence_id: sentenceId,
-        status
-      })
-  } catch (err) {
-    console.error('Error updating sentence progress:', err)
-  }
-}
-
-async function updateUserProfile(exerciseCompleted = false) {
-  if (!exerciseCompleted || !isFirstCompletion.value) return
-
-  try {
-    // Get current user profile
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', user.value.id)
-      .single()
-
-    // Group sentences by difficulty
-    const sentencesByDifficulty = sentences.value.reduce((acc, sentence) => {
-      const difficulty = sentence.difficulty_level
-      if (!acc[difficulty]) acc[difficulty] = []
-      acc[difficulty].push(sentence.id)
-      return acc
-    }, {})
-
-    // Merge with existing sentences_by_difficulty
-    const existingDifficulties = profile?.sentences_by_difficulty || {}
-    Object.entries(sentencesByDifficulty).forEach(([difficulty, ids]) => {
-      if (!existingDifficulties[difficulty]) existingDifficulties[difficulty] = []
-      existingDifficulties[difficulty].push(...ids)
-    })
-
-    // Update user profile
-    await supabase
-      .from('user_profiles')
-      .upsert({
-        user_id: user.value.id,
-        completed_exercises_count: (profile?.completed_exercises_count || 0) + 1,
-        sentences_by_difficulty: existingDifficulties
-      })
-  } catch (err) {
-    console.error('Error updating user profile:', err)
-  }
-}
-
-async function handleRating(rating) {
-  try {
-    await supabase
-      .from('user_progress')
-      .update({ rating })
-      .eq('user_id', user.value.id)
-      .eq('exercise_id', route.params.id)
-
-    router.push('/dashboard')
-  } catch (err) {
-    console.error('Error updating exercise rating:', err)
-  }
-}
 
 function speakSentence() {
   if (!sentences.value[currentSentenceIndex.value]) return
@@ -196,56 +73,35 @@ function speakSentence() {
 }
 
 async function nextSentence() {
-  const currentSentence = sentences.value[currentSentenceIndex.value]
-  
-  // Update sentence progress
-  await updateSentenceProgress(
-    currentSentence.id,
-    currentScore.value >= 0.85 ? 'completed' : 'skipped'
-  )
-
-  // Update local sentence status
-  sentences.value[currentSentenceIndex.value].status = 
-    currentScore.value >= 0.85 ? 'completed' : 'skipped'
-
   if (currentSentenceIndex.value < sentences.value.length - 1) {
     currentSentenceIndex.value++
     currentScore.value = null
-  } else if (isExerciseCompleted.value) {
-    // Only show rating modal if ALL sentences are completed
-    await updateProgress('done')
-    await updateUserProfile(true)
-    showRatingModal.value = true
   } else {
-    // If not all sentences are completed, update progress and return to dashboard
-    await updateProgress('in_progress')
+    // Exercise completed
+    await updateProgress('done')
+    // Show rating dialog or redirect to dashboard
     router.push('/dashboard')
   }
 }
 
 async function skipSentence() {
-  const currentSentence = sentences.value[currentSentenceIndex.value]
-  skippedSentences.value = [...skippedSentences.value, currentSentence.id]
-  
-  await updateSentenceProgress(currentSentence.id, 'skipped')
-  await updateProgress('in_progress')
-
-  // Update local sentence status
-  sentences.value[currentSentenceIndex.value].status = 'skipped'
-
-  if (currentSentenceIndex.value < sentences.value.length - 1) {
-    currentSentenceIndex.value++
-    currentScore.value = null
-  } else {
-    router.push('/dashboard')
+  const currentSentenceId = sentences.value[currentSentenceIndex.value]?.id
+  if (currentSentenceId) {
+    skippedSentences.value = [...skippedSentences.value, currentSentenceId]
+    await updateProgress('in_progress')
   }
+  nextSentence()
 }
 
 async function updateProgress(status) {
   try {
+    if (!user.value?.id) return
+
     await supabase
       .from('user_progress')
-      .update({
+      .upsert({
+        user_id: user.value.id,
+        exercise_id: route.params.id,
         completion_status: status,
         sentences_skipped: skippedSentences.value,
         last_attempted: new Date().toISOString()
@@ -266,14 +122,17 @@ const currentSentence = computed(() =>
 )
 
 const progress = computed(() => ({
-  current: completedSentences.value,
+  current: currentSentenceIndex.value + 1,
   total: sentences.value.length,
-  percentage: (completedSentences.value / sentences.value.length) * 100
+  percentage: ((currentSentenceIndex.value + 1) / sentences.value.length) * 100
 }))
 
-const canProceed = computed(() => 
-  currentScore.value >= 0.85 || skippedSentences.value.includes(currentSentence.value?.id)
-)
+const canProceed = computed(() => {
+  const currentSentenceId = currentSentence.value?.id
+  return currentScore.value >= 0.85 || 
+    (currentSentenceId && skippedSentences.value?.includes(currentSentenceId)) || 
+    false
+})
 </script>
 
 <template>
@@ -378,12 +237,6 @@ const canProceed = computed(() =>
           </div>
         </div>
       </template>
-
-      <ExerciseRatingModal
-        v-model="showRatingModal"
-        :exercise-id="route.params.id"
-        @rated="handleRating"
-      />
     </div>
   </div>
 </template>

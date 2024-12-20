@@ -7,6 +7,8 @@ phonemizer>=3.3.0
 ortools>=9.11.4210
 dtwalign>=0.1.1
 python-dotenv>=1.0.1
+uvicorn[standard]>=0.34.0
+gruut>=2.4.0
 
 # install this package as "editable"
 -e .

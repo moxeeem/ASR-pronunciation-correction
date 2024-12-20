@@ -1,5 +1,11 @@
 import { db } from './index'; // Подключение к базе данных
-import { exercises, exerciseSentences, sentences, userProgress, userExerciseSentenceProgress } from './schema'; // Импорт таблиц из схемы Drizzle
+import {
+  exercises,
+  exerciseSentences,
+  sentences,
+  userProgress,
+  userExerciseSentenceProgress,
+} from './schema'; // Импорт таблиц из схемы Drizzle
 import { eq, lte, gt, and, between } from 'drizzle-orm'; // Импорт операторов
 import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
@@ -13,8 +19,11 @@ const supabaseKey = process.env.SUPABASE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Функция для получения случайного userId
-async function getRandomUserId(): Promise<string| null> {
-  const { data: { users }, error } = await supabase.auth.admin.listUsers()
+async function getRandomUserId(): Promise<string | null> {
+  const {
+    data: { users },
+    error,
+  } = await supabase.auth.admin.listUsers();
 
   if (error) {
     console.error('Ошибка получения случайного пользователя:', error);
@@ -22,8 +31,12 @@ async function getRandomUserId(): Promise<string| null> {
   }
 
   if (users.length < 1) {
-    console.error('Ошибка - не удалось получить id пользователя, т.к. в схеме auth пользователей не обнаружено', );
-    throw new Error('В схеме auth пользователей не обнаружено - невозможно получить id');
+    console.error(
+      'Ошибка - не удалось получить id пользователя, т.к. в схеме auth пользователей не обнаружено'
+    );
+    throw new Error(
+      'В схеме auth пользователей не обнаружено - невозможно получить id'
+    );
   }
 
   return users && users.length > 0 ? users[0].id : null;
@@ -49,7 +62,9 @@ async function seedExercises() {
   const intermediateSentences = await db
     .select()
     .from(sentences)
-    .where(and(eq(sentences.difficultyLevel, 2), between(sentences.wordCount, 6, 10)))
+    .where(
+      and(eq(sentences.difficultyLevel, 2), between(sentences.wordCount, 6, 10))
+    )
     .limit(10);
 
   const advancedSentences = await db
@@ -59,7 +74,11 @@ async function seedExercises() {
     .limit(10);
 
   // Функция для добавления упражнения и связывания его с предложениями
-  async function createExercise(title: string, description: string, sentenceRows: { id: string }[]) {
+  async function createExercise(
+    title: string,
+    description: string,
+    sentenceRows: { id: string }[]
+  ) {
     // Вставка упражнения с использованием метода returning
     const [exercise] = await db
       .insert(exercises)
@@ -92,7 +111,9 @@ async function seedExercises() {
       sentenceId: sentence.id,
       // status: 'not attempted', // Начальный статус для каждого предложения
     }));
-    await db.insert(userExerciseSentenceProgress).values(sentenceProgressValues);
+    await db
+      .insert(userExerciseSentenceProgress)
+      .values(sentenceProgressValues);
   }
 
   try {

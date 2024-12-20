@@ -1,43 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  compatibilityDate: '2024-04-03',
   devtools: { enabled: false },
-  srcDir: "src/",
-
-  routeRules: {
-    '/api/**': {
-      proxy: process.env.NODE_ENV === "development" ? "http://localhost:8000/api/**" : "/api/**",
-    },
-    '/docs': {
-      proxy: "http://localhost:8000/docs",
-    },
-    '/openapi.json': {
-      proxy: "http://localhost:8000/openapi.json",
-    }
-  },
-
-  runtimeConfig: {
-    public: {
-      baseUrl: process.env.BASE_URL || 'http://localhost:3000',
-      supabaseUrl: process.env.SUPABASE_URL,
-      supabaseKey: process.env.SUPABASE_KEY
-    },
-  },
-
-  nitro: {
-    vercel: {
-      config: {
-        routes: [{
-          "src": "/api/(.*)",
-          "dest": "api/index.py"
-        }]
-      }
-    }
-  },
-
   modules: [
-    "@nuxtjs/supabase",
-    // "@nuxt/ui",
-    "@nuxtjs/tailwindcss"
+    '@nuxtjs/tailwindcss',
+    '@nuxtjs/supabase'
   ],
   supabase: {
     redirectOptions: {
@@ -48,5 +15,11 @@ export default defineNuxtConfig({
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_KEY,
   },
-  compatibilityDate: '2024-04-03',
+  runtimeConfig: {
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseKey: process.env.SUPABASE_KEY,
+      backendApiUrl: process.env.BACKEND_API_URL
+    }
+  }
 })

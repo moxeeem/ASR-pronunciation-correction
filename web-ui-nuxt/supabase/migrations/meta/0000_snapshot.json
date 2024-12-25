@@ -1,5 +1,5 @@
 {
-  "id": "18afa084-532b-4cf6-a453-9b61311619c9",
+  "id": "2a0ea905-5986-4286-910b-b5fea4541c70",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -51,8 +51,8 @@
         }
       },
       "compositePrimaryKeys": {
-        "exercise_sentences_exercise_id_sentence_id_pk": {
-          "name": "exercise_sentences_exercise_id_sentence_id_pk",
+        "exercise_sentences_pk": {
+          "name": "exercise_sentences_pk",
           "columns": [
             "exercise_id",
             "sentence_id"
@@ -178,6 +178,80 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.user_exercise_sentence_progress": {
+      "name": "user_exercise_sentence_progress",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "exercise_id": {
+          "name": "exercise_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sentence_id": {
+          "name": "sentence_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not attempted'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_exercise_sentence_progress_exercise_id_exercises_id_fk": {
+          "name": "user_exercise_sentence_progress_exercise_id_exercises_id_fk",
+          "tableFrom": "user_exercise_sentence_progress",
+          "tableTo": "exercises",
+          "columnsFrom": [
+            "exercise_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "user_exercise_sentence_progress_sentence_id_sentences_id_fk": {
+          "name": "user_exercise_sentence_progress_sentence_id_sentences_id_fk",
+          "tableFrom": "user_exercise_sentence_progress",
+          "tableTo": "sentences",
+          "columnsFrom": [
+            "sentence_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_exercise_sentence_progress_pk": {
+          "name": "user_exercise_sentence_progress_pk",
+          "columns": [
+            "user_id",
+            "exercise_id",
+            "sentence_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.user_profiles": {
       "name": "user_profiles",
       "schema": "",
@@ -267,13 +341,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "sentences_skipped": {
-          "name": "sentences_skipped",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'"
         },
         "rating": {
           "name": "rating",

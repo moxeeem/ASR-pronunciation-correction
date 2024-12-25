@@ -11,17 +11,22 @@ from pronunciation_api.config import (
     PROGRESS_TABLE
 )
 
+print(f"URL IS {SB_URL}")
+print(f"KEY IS {SB_KEY}")
+
 # создание клиента Supabase
 supabase: Client = create_client(
     supabase_url=SB_URL,
     supabase_key=SB_KEY
 )
 
+
 def get_sentence_by_id(sentence_id: UUID) -> list[dict]:
     resp: APIResponse = supabase.table(
         SENTENCES_TABLE
     ).select("*").eq("id", sentence_id).execute()
     return resp.data
+
 
 def get_all_sentences():
     return supabase.table(SENTENCES_TABLE).select("*").execute()

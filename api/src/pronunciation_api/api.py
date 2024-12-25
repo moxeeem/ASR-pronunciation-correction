@@ -10,7 +10,8 @@ from pronunciation_api.phoneme_converter import get_gruut_phonemes
 import pronunciation_api.speech_to_score as speech_to_score_api
 from pronunciation_api.config import (
     LOCAL_MODEL_PATH,
-    PhoneticTranscriptionModelContainer
+    PhoneticTranscriptionModelContainer,
+    MODEL_MODE,
 )
 
 
@@ -22,6 +23,9 @@ if LOCAL_MODEL_PATH is None:
     raise RuntimeError("LOCAL_MODEL_PATH environment variable WAS NOT SET!")
 
 # load model for IPA phonetic transcription
+# if MODEL_MODE:
+#     pass
+
 ipa_model_container.load_from_path(LOCAL_MODEL_PATH)
 print(f"[debug] IPA Model loaded {ipa_model_container.is_loaded}")
 
@@ -38,6 +42,7 @@ app.add_middleware(
     allow_headers=["*"],    # разрешённые заголовки (например, Authorization, Content-Type)
 )
 
+
 @app.post("/api/transcribe_sentence")
 async def transcribe(
     audio: UploadFile = File(...),
@@ -50,7 +55,7 @@ async def transcribe(
     # создаём директорию, если её нет
     file_path = os.path.join(
         "test_audios",
-        f"{dt.datetime.now().strftime("%Y%m%d-%H%M%S")}{sentence_id}_{audio.filename}"
+        f"{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}{sentence_id}_{audio.filename}"
     )
     with open(file_path, "wb") as f:
         f.write(audio_content)

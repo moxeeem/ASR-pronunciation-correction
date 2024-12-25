@@ -78,7 +78,7 @@
 ## Структурная схема решения
 
 <p align="center">
-  <img src="img\structure_schema.png" alt="Структурная схема решения" width="80%">
+  <img src="img\structure_schema.png" alt="Структурная схема решения" width="85%">
 </p>
 
 

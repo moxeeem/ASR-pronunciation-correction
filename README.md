@@ -20,9 +20,9 @@
   - [Структура репозитория](#структура-репозитория)
   - [Датасет](#датасет)
   - [Модель](#модель)
-  - [API](#api)
-  - [База данных](#база-данных)
   - [Веб-сервис](#веб-сервис)
+  - [Настройка базы данных](#настройка-базы-данных)
+  - [Веб-приложение](#веб-приложение)
   - [Авторы](#авторы)
   - [Лицензия](#лицензия)
 
@@ -76,17 +76,76 @@
 Дообученная модель опубликована на HuggingFace: [![HuggingFace](https://img.shields.io/badge/HuggingFace-Model-yellow?style=flat-square&logo=huggingface&logoColor=white)](https://huggingface.co/moxeeeem/wav2vec2-finetuned-pronunciation-correction)
 
 
-## API
-
----
-
-## База данных
-
----
-
 ## Веб-сервис
 
----
+API приложения разработан на базе фреймворка **FastAPI**.
+
+**Основные функции:**
+
+1. Предоставление предложений для тренировки 
+   - Сервис выбирает случайное предложение из базы данных на основе уровня сложности и текущего прогресса пользователя.  
+   - База данных содержит тексты предложений, их фонетические транскрипции и уровни сложности.
+
+2. Оценка произношения
+   - Пользователь загружает аудиофайл, который обрабатывается с помощью предобученной модели Wav2Vec2.  
+   - Модель транскрибирует речь, сравнивая результат с эталонной транскрипцией из базы данных.  
+   - Формируется процентное соответствие и обратная связь для пользователя.
+
+**Docker:**
+
+- Для упрощения развертывания был создан [Docker-контейнер](https://github.com/moxeeem/ASR-pronunciation-correction/blob/main/api/Dockerfile) с возможностью пересборки через [скрипт](https://github.com/moxeeem/ASR-pronunciation-correction/blob/main/api/rebuild_container.sh).
+
+
+## Настройка базы данных
+
+Порядок действий:
+
+* Склонировать репозиторий https://github.com/moxeeem/ASR-pronunciation-correction.git;
+* Переименовать файл .env.example в .env и указать переменные окружения:
+    * `SUPABASE_URL` (url к базе данных supabase, где хранятся упражнения);
+    * `SUPABASE_KEY` (ключ к базе данных supabase);
+    * `LOCAL_MODEL_PATH` (локальный путь к модели);
+    * `MODEL_MODE`=`'LOCAL'`/`'HF'` (путь к модели - локально или через hugging face).
+
+Пример оформления `.csv` файла с упражнениями:
+
+| Название столбца | Тип | Пример | Пояснение |
+|---|---|---|---|
+| content | string | It's all over between us. | Текст предложения |
+| sentence_length_group | enum("small", "medium", "large") | small | Размер предложения |
+| ipaTranscription | string | ɪts ɔl oʊvɚ bɪtwin ʌs | Транскрипция в IPA |
+| arpabetTranscription | string | H1-T-S AO1-L OW1-V-ER0 B-IH0-T-W-IY1-N AH1-S | Транскрипция в ARPABET |
+| wordCount | integer | 5 | Количество слов |
+| charCountNoSpaces | integer | 21 | Количество символов (без пробелов) |
+| charCountTotal | integer | 25 | Количество символов (с пробелами) |
+| difficultyLevel | integer | 2 | Уровень сложности |
+| translationRu | string |  | Перевод на русский язык |
+
+## Веб-приложение
+
+Для разработки веб-приложения использовались TypeScript, Vue.js 3, Nuxt 3, Vite.js.
+
+**Скриншоты работы приложения:**
+
+- Окно авторизации
+<p align="center">
+  <img src="img\auth.png" alt="Окно авторизации" width="60%">
+</p>
+
+- Выбор упражнений
+<p align="center">
+  <img src="img\selection.png" alt="Выбор упражнений" width="60%">
+</p>
+
+- Упражнение
+<p align="center">
+  <img src="img\task.png" alt="Упражнение" width="60%">
+</p>
+
+- Результат выполнения упражнения
+<p align="center">
+  <img src="img\result.png" alt="Результат выполнения упражнения" width="60%">
+</p>
 
 ## Авторы
 [![Михаил Дорохин](https://img.shields.io/badge/Михаил_Дорохин-GitHub-black?style=flat-square&logo=github&logoColor=white)](https://github.com/Quasarel)  

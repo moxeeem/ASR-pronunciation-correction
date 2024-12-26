@@ -12,8 +12,19 @@ export default defineNuxtConfig({
       callback: '/confirm',
       exclude: ['/', '/auth/register'],
     },
-    url: process.env.SUPABASE_URL,
-    key: process.env.SUPABASE_KEY,
+    cookieOptions: {
+      maxAge: 60 * 60 * 8, // 8 hours
+      sameSite: 'lax',
+      secure: true
+    },
+    clientOptions: {
+      auth: {
+        flowType: 'pkce',
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true
+      }
+    }
   },
   runtimeConfig: {
     public: {

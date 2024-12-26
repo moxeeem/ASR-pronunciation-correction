@@ -13,3 +13,10 @@ export interface ProgressUpdate {
   sentences_skipped?: string[];
   rating?: number;
 }
+
+export interface SentenceProgress {
+  user_id: string;
+  exercise_id: string;
+  sentence_id: string;
+  status: 'not_attempted' | 'completed' | 'skipped';
+}

@@ -107,3 +107,39 @@ async def timestamps(audio: UploadFile = File(...)):
     transcription, logits, predicted_ids = transcribe_api.transcribe_audio_via_tempfile(ipa_model_container.processor, ipa_model_container.model, audio_content)
     word_locations = transcribe_api.get_word_timestamps(transcription, logits, predicted_ids, ipa_model_container.processor, audio_content)
     return word_locations
+
+
+@app.post("/api/transcribe_full")
+async def transcribe_full(
+        audio: UploadFile = File(...),
+        sentence_id: UUID = Form(...),
+):
+    audio_content: bytes = await audio.read()
+    os.makedirs("test_audios", exist_ok=True)
+
+    file_path = os.path.join(
+        "test_audios",
+        f"{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}{sentence_id}_{audio.filename}"
+    )
+    with open(file_path, "wb") as f:
+        f.write(audio_content)
+
+    print(f"[DEBUG] Аудиофайл сохранён в: {file_path}")
+
+    # TODO: check if get_sentence_by_id(sentence_id) returns non-empty list
+    sentence = get_sentence_by_id(sentence_id)[0]
+    result = speech_to_score_api.get_transcription_result(
+        ipa_model_container,
+        audio_content,
+        real_text=sentence["content"],
+        transcription_actual=sentence["ipa_transcription"],
+    )
+    transcription, logits, predicted_ids = transcribe_api.transcribe_audio_via_tempfile(ipa_model_container.processor,
+                                                                                        ipa_model_container.model,
+                                                                                        audio_content)
+    word_locations = transcribe_api.get_word_timestamps(transcription, logits, predicted_ids,
+                                                        ipa_model_container.processor, audio_content)
+    result["word_locations"] = word_locations
+    print(f"[DEBUG] got sentence_id: {sentence_id}, audio: {audio}")
+    pprint.pp({"result": result})
+    return {"result": result}

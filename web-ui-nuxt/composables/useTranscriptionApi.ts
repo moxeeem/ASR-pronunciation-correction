@@ -1,15 +1,6 @@
-import { ref } from 'vue'
-
-interface TranscriptionResult {
-  real_transcription: string
-  transcription: string
-  correct_letters: string
-  accuracy: number
-}
-
-interface TranscriptionResponse {
-  result: TranscriptionResult
-}
+import { ref, readonly } from 'vue'
+import type { TranscriptionResult } from '~/types/api'
+import { prepareAudioForUpload } from '~/utils/audio/upload'
 
 export function useTranscriptionApi() {
   const config = useRuntimeConfig()
@@ -21,36 +12,41 @@ export function useTranscriptionApi() {
     isLoading.value = true
 
     try {
-      console.log('Creating form data...')
-      const formData = new FormData()
-      formData.append('audio', audio, 'recording.wav')
+      // Подготавливаем FormData с аудио
+      const formData = await prepareAudioForUpload(audio)
       formData.append('sentence_id', sentenceId)
 
+      // Логируем для отладки
       console.log('Sending request to:', `${config.public.backendApiUrl}/api/transcribe_sentence`)
+      console.log('FormData entries:', [...formData.entries()].map(([key]) => key))
+
       const response = await fetch(`${config.public.backendApiUrl}/api/transcribe_sentence`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        }
       })
 
-      console.log('Response status:', response.status)
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('API error response:', errorText)
-        throw new Error(`HTTP error! status: ${response.status}`)
+        console.error('Server error response:', errorText)
+        throw new Error(`Server error: ${response.status} - ${errorText}`)
       }
 
-      const data: TranscriptionResponse = await response.json()
-      console.log('API response data:', data)
-      
+      const data = await response.json()
+      console.log('Server response:', data)
+
       if (!data?.result) {
         throw new Error('Invalid response format')
       }
 
       return data.result
-    } catch (e) {
-      console.error('Transcription error:', e)
-      error.value = e instanceof Error ? e.message : 'Failed to transcribe audio'
-      throw e
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to transcribe audio'
+      error.value = message
+      console.error('Transcription error:', err)
+      throw new Error(message)
     } finally {
       isLoading.value = false
     }
@@ -58,7 +54,7 @@ export function useTranscriptionApi() {
 
   return {
     transcribeSentence,
-    error,
-    isLoading
+    error: readonly(error),
+    isLoading: readonly(isLoading)
   }
 }

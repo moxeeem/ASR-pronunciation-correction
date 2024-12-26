@@ -1,107 +1,130 @@
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="space-y-4">
+    <!-- Transcription Display -->
+    <TranscriptionDisplay 
+      :expected-ipa-transcription="sentence.ipa_transcription"
+      :expected-arpabet-transcription="sentence.arpabet_transcription"
+      :user-transcription="currentResult?.transcription"
+      :accuracy="currentResult?.accuracy"
+    />
+
+    <!-- Controls -->
     <div class="flex items-center gap-4">
       <button
-        @click="toggleRecording"
-        :class="[
-          'flex items-center gap-2 rounded-md px-4 py-2 text-white transition-colors',
-          isRecording
-            ? 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600'
-            : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
-        ]"
-        :disabled="isProcessing"
+        @click="handleRecording"
+        :disabled="isProcessing || isCompleted"
+        class="flex items-center gap-2 rounded-md px-4 py-2 text-white transition-all duration-200"
+        :class="buttonClass"
       >
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            v-if="isRecording"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z M5 12h14"
-          />
-          <path
-            v-else
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-          />
-        </svg>
+        <span v-if="isProcessing" class="animate-spin">⏳</span>
         {{ buttonText }}
       </button>
 
-      <span v-if="isRecording" class="text-sm text-red-600 dark:text-red-400 animate-pulse">
-        Recording...
-      </span>
-      <span v-else-if="isProcessing" class="text-sm text-blue-600 dark:text-blue-400 animate-pulse">
-        Analyzing...
-      </span>
+      <button
+        @click="handleNext"
+        :disabled="!canProceed"
+        class="rounded-md bg-green-600 px-4 py-2 text-white transition-all duration-200 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        :class="{ 'animate-pulse': canProceed && !isCompleted }"
+      >
+        Next
+      </button>
+
+      <button
+        @click="handleSkip"
+        :disabled="isCompleted"
+        class="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Skip
+      </button>
     </div>
 
-    <div v-if="error" class="text-sm text-red-600 dark:text-red-400">
-      {{ error }}
-    </div>
+    <!-- Feedback Message -->
+    <p 
+      v-if="currentResult && !canProceed" 
+      class="text-sm text-red-600 dark:text-red-400 mt-2"
+    >
+      Try to achieve at least 80% accuracy to proceed
+    </p>
 
-    <!-- Debug info -->
-    <div v-if="lastResult" class="text-sm text-gray-600 dark:text-gray-400">
-      <div>Your pronunciation: {{ lastResult.transcription }}</div>
-      <div>Expected: {{ lastResult.real_transcription }}</div>
-      <div>Accuracy: {{ Math.round(lastResult.accuracy * 100) }}%</div>
-    </div>
+    <p v-if="error" class="mt-2 text-red-500">{{ error }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { Sentence } from '~/types/exercise'
+
 const props = defineProps<{
-  sentence: {
-    id: string
-    content: string
-    ipa_transcription: string
-  }
+  sentence: Sentence
 }>()
 
-const emit = defineEmits<{
-  score: [score: number]
-}>()
+const emit = defineEmits(['score', 'next', 'skip'])
 
 const recorder = useAudioRecorder()
 const api = useTranscriptionApi()
 
-const isRecording = computed(() => recorder.isRecording.value)
-const isProcessing = computed(() => recorder.isProcessing.value)
-const buttonText = computed(() => recorder.buttonText.value)
-const error = computed(() => recorder.error.value || api.error.value)
-const lastResult = ref(null)
+const { isRecording, isProcessing, error } = recorder
+const currentResult = ref(null)
+const isCompleted = ref(false)
 
-async function toggleRecording() {
+const buttonText = computed(() => {
+  if (isProcessing.value) return 'Processing...'
+  if (isCompleted.value) return 'Completed'
+  return isRecording.value ? 'Stop Recording' : 'Start Recording'
+})
+
+const buttonClass = computed(() => ({
+  'bg-red-500 hover:bg-red-600': isRecording.value,
+  'bg-blue-500 hover:bg-blue-600': !isRecording.value && !isCompleted.value,
+  'bg-green-500': isCompleted.value,
+  'opacity-50 cursor-not-allowed': isProcessing.value || isCompleted.value
+}))
+
+const canProceed = computed(() => currentResult.value?.accuracy >= 0.8)
+
+async function handleRecording() {
+  if (isCompleted.value) return
+
   try {
     if (isRecording.value) {
-      recorder.isProcessing.value = true
-      const audioBlob = await recorder.stopRecording()
+      const blob = await recorder.stopRecording()
       
-      if (audioBlob) {
-        console.log('Sending audio for analysis...')
-        const result = await api.transcribeSentence(audioBlob, props.sentence.id)
-        console.log('Received result:', result)
-        
-        lastResult.value = result
+      if (blob) {
+        const result = await api.transcribeSentence(blob, props.sentence.id)
+        currentResult.value = result
         emit('score', result.accuracy)
+        
+        if (result.accuracy >= 0.8) {
+          isCompleted.value = true
+        }
       }
     } else {
       await recorder.startRecording()
     }
   } catch (err) {
-    console.error('Recording error:', err)
-    error.value = err instanceof Error ? err.message : 'An error occurred during recording'
-  } finally {
-    recorder.isProcessing.value = false
+    console.error('Recording handler error:', err)
   }
 }
 
-// Cleanup on component unmount
+function handleNext() {
+  if (!canProceed.value) return
+  emit('next')
+  resetState()
+}
+
+function handleSkip() {
+  if (isCompleted.value) return
+  emit('skip')
+  resetState()
+}
+
+function resetState() {
+  currentResult.value = null
+  isCompleted.value = false
+}
+
 onUnmounted(() => {
   if (isRecording.value) {
-    recorder.stopRecording()
+    recorder.stopRecording().catch(console.error)
   }
 })
 </script>

@@ -13,7 +13,7 @@ def get_transcription_result(
     if not model_container.is_loaded:
         raise RuntimeError("You need to load model first; - model was not loaded!")
     
-    transcription_IPA = transcribe_audio_via_tempfile(
+    transcription_IPA, _, _ = transcribe_audio_via_tempfile(
         model_container.processor,
         model_container.model,
         audio_content

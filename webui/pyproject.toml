@@ -1,0 +1,38 @@
+[project]
+name = "web-ui"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Maksim Ivanov, Victor Khovanov, Mikhail Dorokhin", email = "victorkhovtko@gmail.com"},
+]
+dependencies = [
+    "torch>=2.4.1",
+    "torchaudio",
+    "soundfile",
+    "omegaconf",
+    "audioread",
+    "requests",
+    "dtwalign",
+    "eng_to_ipa",
+    "pandas",
+    "flask",
+    "flask_cors",
+    "pickle-mixin",
+    "sqlalchemy",
+    "transformers",
+    "sentencepiece",
+    "ortools",
+]
+
+requires-python = "==3.12.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "ipython>=8.28.0",
+]

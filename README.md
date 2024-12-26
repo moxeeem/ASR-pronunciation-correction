@@ -102,30 +102,95 @@ API приложения разработан на базе фреймворка
 - Для упрощения развертывания был создан [Docker-контейнер](https://github.com/moxeeem/ASR-pronunciation-correction/blob/main/api/Dockerfile) с возможностью пересборки через [скрипт](https://github.com/moxeeem/ASR-pronunciation-correction/blob/main/api/rebuild_container.sh).
 
 
-## Настройка базы данных
+## Инструкция по установке
 
-Порядок действий:
+* Склонировать репозиторий <https://github.com/moxeeem/ASR-pronunciation-correction.git>;
 
-* Склонировать репозиторий https://github.com/moxeeem/ASR-pronunciation-correction.git;
-* Переименовать файл .env.example в .env и указать переменные окружения:
-    * `SUPABASE_URL` (url к базе данных supabase, где хранятся упражнения);
-    * `SUPABASE_KEY` (ключ к базе данных supabase);
-    * `LOCAL_MODEL_PATH` (локальный путь к модели);
-    * `MODEL_MODE`=`'LOCAL'`/`'HF'` (путь к модели - локально или через hugging face).
+### Настройка бэкэнда
 
+Установить зависимости:
+
+```shell
+python install -r
+```
+
+* Переименовать файл `.env.example` в `.env` и указать переменные окружения:
+  * `SUPABASE_URL` (url к базе данных supabase, где хранятся упражнения);
+  * `SUPABASE_KEY` (ключ управления supabase);
+  * `LOCAL_MODEL_PATH` (локальный путь к модели / ссылка на модель через hugging face);
+  * `MODEL_SOURCE`=`'LOCAL'`/`'HF'` (путь загрузки модели - локально или через hugging face).
+
+**Запуск API:**
+
+```shell
+cd api/
+python -m uvicorn src.pronunciation_api.api:app --reload
+```
+
+### Настройка фронтэнда
+
+Установить зависимости:
+
+```shell
+npm install
+```
+
+* Переименовать файл `.env.example` в `.env` и указать переменные окружения:
+  * `SUPABASE_URL` (url к базе данных supabase, где хранятся упражнения);
+  * `SUPABASE_KEY` (ключ управления supabase);
+  * `DATABASE_URL` (url к базе данных для миграций);
+    * например:
+    `postgresql://postgres.padludpvkvposslxxcky:[вашпароль]@aws-0-eu-central-2.pooler.supabase.com:6543/postgres`
+  * `BACKEND_API_URL` (url бэкэнда).
+    * например:
+    `http://127.0.0.1:8000/`
+
+**Запуск приложения:**
+
+```shell
+cd web-ui-nuxt/
+npm run dev
+```
+
+### Настройка базы данных
+
+При желании замены датасета с предложениями создать файл `.csv`.
 Пример оформления `.csv` файла с упражнениями:
 
 | Название столбца | Тип | Пример | Пояснение |
 |---|---|---|---|
 | content | string | It's all over between us. | Текст предложения |
 | sentence_length_group | enum("small", "medium", "large") | small | Размер предложения |
-| ipaTranscription | string | ɪts ɔl oʊvɚ bɪtwin ʌs | Транскрипция в IPA |
+| ipaTranscription | string | ɪts ɔl oʊvɚ bɪtwin ʌs | Транскрипция в ipa |
 | arpabetTranscription | string | H1-T-S AO1-L OW1-V-ER0 B-IH0-T-W-IY1-N AH1-S | Транскрипция в ARPABET |
 | wordCount | integer | 5 | Количество слов |
 | charCountNoSpaces | integer | 21 | Количество символов (без пробелов) |
 | charCountTotal | integer | 25 | Количество символов (с пробелами) |
 | difficultyLevel | integer | 2 | Уровень сложности |
-| translationRu | string |  | Перевод на русский язык |
+| translationRu | string |  | Перевод |
+
+#### Проведение миграций
+
+Схема drizzle находится по пути [```web-ui-nuxt/drizzle/schema.ts```](https://github.com/moxeeem/ASR-pronunciation-correction/blob/main/web-ui-nuxt/drizzle/schema.ts)
+
+Для генерации миграций запустить код в терминале Powershell:
+
+```shell
+npx drizzle-kit generate --config drizzle.config.ts 
+# генерирует миграции из описания схемы PostgreSQL
+npx drizzle-kit migrate --config drizzle.config.ts
+# осуществление миграции. Для этого и нужна переменная DATABASE_URL
+```
+
+#### Заполнение базы данных
+
+Для заполнения базы данных запустить код:
+
+```shell
+npx run seed:sentences
+npx run seed:exercises
+```
+
 
 ## Веб-приложение
 
@@ -155,7 +220,7 @@ API приложения разработан на базе фреймворка
 
 ## Авторы
 [![Михаил Дорохин](https://img.shields.io/badge/Михаил_Дорохин-GitHub-black?style=flat-square&logo=github&logoColor=white)](https://github.com/Quasarel)  
-[![Виктор Хованов](https://img.shields.io/badge/Виктор_Хованов-GitHub-black?style=flat-square&logo=github&logoColor=white)](https://github.com/Quasarel)  
+[![Виктор Хованов](https://img.shields.io/badge/Виктор_Хованов-GitHub-black?style=flat-square&logo=github&logoColor=white)](https://github.com/m0rphed)  
 [![Максим Иванов](https://img.shields.io/badge/Максим_Иванов-GitHub-black?style=flat-square&logo=github&logoColor=white)](https://github.com/moxeeem)
 
 

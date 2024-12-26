@@ -7,11 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pronunciation_api.supabase_queries import get_sentence_by_id
 from pronunciation_api.phoneme_converter import get_gruut_phonemes
+import pronunciation_api.transcribe as transcribe_api
 import pronunciation_api.speech_to_score as speech_to_score_api
 from pronunciation_api.config import (
     LOCAL_MODEL_PATH,
     PhoneticTranscriptionModelContainer,
-    MODEL_MODE,
+    MODEL_SOURCE,
 )
 
 
@@ -23,10 +24,11 @@ if LOCAL_MODEL_PATH is None:
     raise RuntimeError("LOCAL_MODEL_PATH environment variable WAS NOT SET!")
 
 # load model for IPA phonetic transcription
-# if MODEL_MODE:
-#     pass
+if MODEL_SOURCE == "LOCAL":
+    ipa_model_container.load_from_path(LOCAL_MODEL_PATH)
+elif MODEL_SOURCE == "HF":
+    ipa_model_container.load_from_huggingface(LOCAL_MODEL_PATH)
 
-ipa_model_container.load_from_path(LOCAL_MODEL_PATH)
 print(f"[debug] IPA Model loaded {ipa_model_container.is_loaded}")
 
 app = FastAPI()
@@ -86,3 +88,22 @@ async def transcribe_text(eng_text: str = Form(...)):
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/word_timestamps")
+async def timestamps(audio: UploadFile = File(...)):
+    audio_content: bytes = await audio.read()
+    os.makedirs("test_audios", exist_ok=True)
+
+    file_path = os.path.join(
+        "test_audios",
+        f"{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}_{audio.filename}"
+    )
+    with open(file_path, "wb") as f:
+        f.write(audio_content)
+
+    print(f"[DEBUG] Аудиофайл сохранён в: {file_path}")
+
+    transcription, logits, predicted_ids = transcribe_api.transcribe_audio_via_tempfile(ipa_model_container.processor, ipa_model_container.model, audio_content)
+    word_locations = transcribe_api.get_word_timestamps(transcription, logits, predicted_ids, ipa_model_container.processor, audio_content)
+    return word_locations

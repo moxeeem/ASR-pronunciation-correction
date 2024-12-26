@@ -8,7 +8,7 @@ from dataclasses import dataclass
 _required = [
     "SUPABASE_URL",
     "SUPABASE_KEY",
-    "MODEL_MODE"
+    "MODEL_SOURCE"
     # "LOCAL_MODEL_PATH"
 ]
 
@@ -29,7 +29,7 @@ SB_KEY: str             = _env["SUPABASE_KEY"]
 
 # print(f"[DEBUG] SUPABASE: URL, KEY: {SB_URL} {SB_KEY}")
 # Local path (specify if needed)
-MODEL_MODE: str | None = os.getenv("MODEL_MODE", "HF") 
+MODEL_SOURCE: str | None = os.getenv("MODEL_SOURCE", "HF")
 LOCAL_MODEL_PATH: str | None = os.environ.get("LOCAL_MODEL_PATH")
 
 # table that holds English sentences data

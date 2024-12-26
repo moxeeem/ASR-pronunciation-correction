@@ -1,3 +1,4 @@
+typescript
 export interface Exercise {
   id: string
   title: string
@@ -11,6 +12,11 @@ export interface Sentence {
   content: string
   ipa_transcription: string | null
   arpabet_transcription: string | null
+  word_count: number
+  char_count_no_spaces: number
+  char_count_total: number
+  difficulty_level: number
+  translation_ru: string | null
 }
 
 export interface ExerciseSentence {

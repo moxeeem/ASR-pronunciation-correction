@@ -1,22 +1,22 @@
-import { ref, computed } from 'vue'
-import type { CompletionStatus } from '~/types/exercise'
+import { ref, computed, Ref } from 'vue'
+import type { CompletionStatus, Sentence } from '~/types/exercise'
 
-export function useExerciseProgress(totalSentences: number) {
+export function useExerciseProgress(sentences: Ref<Sentence[]>) {
   const currentIndex = ref(0)
   const completedSentences = ref(new Set<number>())
   const skippedSentences = ref(new Set<number>())
 
   const progress = computed(() => ({
     current: currentIndex.value + 1,
-    total: totalSentences,
-    percentage: ((completedSentences.value.size + skippedSentences.value.size) / totalSentences) * 100,
+    total: sentences.value.length,
+    percentage: ((completedSentences.value.size + skippedSentences.value.size) / sentences.value.length) * 100,
     completed: completedSentences.value.size,
     skipped: skippedSentences.value.size,
-    remaining: totalSentences - (completedSentences.value.size + skippedSentences.value.size)
+    remaining: sentences.value.length - (completedSentences.value.size + skippedSentences.value.size)
   }))
 
   const isCompleted = computed(() => 
-    completedSentences.value.size + skippedSentences.value.size === totalSentences
+    completedSentences.value.size + skippedSentences.value.size === sentences.value.length
   )
 
   function markCompleted(index: number) {
@@ -28,7 +28,7 @@ export function useExerciseProgress(totalSentences: number) {
   }
 
   function moveNext() {
-    if (currentIndex.value < totalSentences - 1) {
+    if (currentIndex.value < sentences.value.length - 1) {
       currentIndex.value++
       return true
     }

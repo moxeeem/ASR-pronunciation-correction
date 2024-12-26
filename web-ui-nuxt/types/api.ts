@@ -1,3 +1,4 @@
+
 export interface TranscriptionResult {
   real_transcription: string;
   transcription: string;

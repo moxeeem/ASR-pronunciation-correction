@@ -58,7 +58,8 @@ const currentSentence = computed(() => sentences.value[currentSentenceIndex.valu
 const progressStats = computed(() => ({
   current: currentSentenceIndex.value + 1,
   total: sentences.value.length,
-  percentage: ((completedCount.value + skippedCount.value) / sentences.value.length) * 100
+  // percentage: ((completedCount.value + skippedCount.value) / sentences.value.length) * 100
+  percentage: (completedCount.value / sentences.value.length) * 100
 }))
 
 // Methods
@@ -80,7 +81,7 @@ async function handlePronunciationScore(score: number) {
         user_id: user.value.id,
         exercise_id: route.params.id,
         sentence_id: currentSentence.value.id,
-        status: score >= 0.8 ? 'completed' : 'not_attempted'
+        status: score >= 0.8 ? 'completed' : 'not_completed'
       })
 
     if (score >= 0.8) {
@@ -174,9 +175,20 @@ onMounted(async () => {
     // Fetch progress
     const { data: progressData } = await supabase
       .from('user_exercise_sentence_progress')
-      .select('status')
+      .select('status, sentence_id')
       .eq('exercise_id', route.params.id)
       .eq('user_id', user.value.id)
+    
+    
+    const completedSentencesIds = progressData?.filter(p => p.status === 'completed').map(c => c.sentence_id)
+    if (!completedSentencesIds) throw Error(
+      `Could not filter exercise sentence progress for exercise: '${route.params.id}' and user: ${user.value.id}`
+    )
+
+    const completed = sentences.value.filter(s => completedSentencesIds.includes(s.id))
+    const uncompleted = sentences.value.filter(s => !completedSentencesIds.includes(s.id))
+    currentSentenceIndex.value = completedSentencesIds?.length - 1
+    sentences.value = completed.concat(uncompleted)
 
     if (progressData) {
       completedCount.value = progressData.filter(p => p.status === 'completed').length

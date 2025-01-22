@@ -6,7 +6,7 @@ export function useProgress() {
   
   const error = ref<string | null>(null)
 
-  async function updateSentenceProgress(exerciseId: string, sentenceId: string, status: 'not_attempted' | 'completed' | 'skipped') {
+  async function updateSentenceProgress(exerciseId: string, sentenceId: string, status: 'not_completed' | 'completed' | 'skipped') {
     if (!user.value) return
     
     try {
@@ -49,11 +49,14 @@ export function useProgress() {
 
       // Exercise is complete if all sentences are either completed or skipped
       // and at least one sentence is completed
-      const hasCompletedSentence = progress.some(p => p.status === 'completed')
-      const allSentencesAttempted = progress.length === sentences.length &&
-        progress.every(p => p.status === 'completed' || p.status === 'skipped')
-
-      return hasCompletedSentence && allSentencesAttempted
+      
+      // считать процент пройденных
+      // ИЛИ вообще считать пройденными только тогда когда пройдены все
+      const allSentencesCompleted = (
+        progress.length === sentences.length &&
+          progress.every(p => p.status === 'completed')
+      )
+      return allSentencesCompleted;
     } catch (e) {
       console.error('Failed to check exercise completion:', e)
       return false

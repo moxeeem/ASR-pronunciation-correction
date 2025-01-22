@@ -18,5 +18,5 @@ export interface SentenceProgress {
   user_id: string;
   exercise_id: string;
   sentence_id: string;
-  status: 'not_attempted' | 'completed' | 'skipped';
+  status: 'not_completed' | 'completed' | 'skipped';
 }

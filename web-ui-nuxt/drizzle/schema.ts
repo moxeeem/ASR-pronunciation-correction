@@ -99,7 +99,7 @@ export const userExerciseSentenceProgress = pgTable(
     sentenceId: uuid('sentence_id')
       .notNull()
       .references(() => sentences.id), // Ссылка на предложение
-    status: text('status').default('not attempted').notNull(), // Статус выполнения: 'not attempted', 'completed', 'skipped'
+    status: text('status').default('not_completed').notNull(), // Статус выполнения: 'not_completed', 'completed', 'skipped'
   },
   (table) => ({
     // Уникальность комбинации (user, exercise, sentence)

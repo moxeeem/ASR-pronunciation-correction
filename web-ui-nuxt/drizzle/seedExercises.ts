@@ -109,7 +109,7 @@ async function seedExercises() {
       userId: userId,
       exerciseId: exercise.id,
       sentenceId: sentence.id,
-      // status: 'not attempted', // Начальный статус для каждого предложения
+      // status: 'not_completed', // Начальный статус для каждого предложения
     }));
     await db
       .insert(userExerciseSentenceProgress)

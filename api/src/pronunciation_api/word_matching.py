@@ -20,22 +20,29 @@ def get_word_distance_matrix(
     number_of_estimated_words = len(words_estimated)
 
     word_distance_matrix = np.zeros(
-        (number_of_estimated_words + OFFSET_BLANK, number_of_real_words)
+        (
+            number_of_estimated_words + OFFSET_BLANK,
+            number_of_real_words
+        )
     )
 
     for idx_estimated in range(number_of_estimated_words):
         for idx_real in range(number_of_real_words):
-            word_distance_matrix[idx_estimated, idx_real] = (
-                w_metrics.edit_distance_numpy(
-                    words_estimated[idx_estimated], words_real[idx_real]
+            word_est = words_estimated[idx_estimated]
+            word_real = words_real[idx_real]
+            if 'ə' in word_real:
+                word_distance = w_metrics.edit_distance_python(
+                    word_est,
+                    word_real.replace('ə', 'ʌ')
                 )
-            )
+            else:
+                word_distance = w_metrics.edit_distance_python(word_est, word_real)
+            word_distance_matrix[idx_estimated, idx_real] = word_distance
 
     if OFFSET_BLANK == 1:
         for idx_real in range(number_of_real_words):
-            word_distance_matrix[number_of_estimated_words, idx_real] = len(
-                words_real[idx_real]
-            )
+            word_real = words_real[idx_real]
+            word_distance_matrix[number_of_estimated_words, idx_real] = len(word_real)
 
     return word_distance_matrix
 
@@ -222,10 +229,15 @@ def get_best_mapped_words_dtw(
 def getWhichLettersWereTranscribedCorrectly(real_word, transcribed_word):
     is_letter_correct = [None] * len(real_word)
     for idx, letter in enumerate(real_word):
-        if letter == transcribed_word[idx] or letter in string.punctuation:
+        if (
+            letter == transcribed_word[idx]
+            or letter in string.punctuation
+            or (letter == "ə" and transcribed_word[idx] == "ʌ")
+        ):
             is_letter_correct[idx] = 1
         else:
             is_letter_correct[idx] = 0
+
     return is_letter_correct
 
 
@@ -243,8 +255,8 @@ def getWhichLettersWereTranscribedCorrectly(real_word, transcribed_word):
 #     return word_colored
 
 if __name__ == "__main__":
-    words_real = ["hello", "world", "good", "morning"]
-    words_estimated = ["helo", "wrld", "god", "moring"]
+    words_real = ["maɪ", "pɹiviəs", "bɔs", "wəz", "ə", "wʊmən"]
+    words_estimated = ["maɪ", "pɹiviʌs", "bɔs", "wʌz", "ʌ", "wʊmʌn"]
 
     word_distance_matrix = get_word_distance_matrix(
         words_estimated,
@@ -267,8 +279,9 @@ if __name__ == "__main__":
         + " "
         for idx, word_real in enumerate(words_real)
     )
-    print(*words_real, is_letter_correct_all_words)
-
+    print(*words_real)
+    print(*mapped_words)
+    print(is_letter_correct_all_words)
 
     print("Сопоставленные слова:")
     for real, est in zip(words_real, mapped_words):

@@ -11,7 +11,7 @@
               v-for="(char, charIndex) in word.split('')" 
               :key="`user-${wordIndex}-${charIndex}`"
               class="transition-colors duration-200"
-              :class="getCharacterClass(wordIndex, charIndex)"
+              :class="'text-gray-900 dark:text-gray-100 font-medium'"
               :title="getCharacterTitle(wordIndex, charIndex)"
             >{{ char }}</span>
           </span>
@@ -21,7 +21,7 @@
 
     <!-- Real Transcription -->
     <div v-if="realTranscription" class="space-y-2">
-      <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Real Pronunciation</h4>
+      <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Expected Pronunciation (errors highlighted)</h4>
       <div class="flex flex-wrap gap-2 font-mono text-base leading-relaxed">
         <template v-for="(word, wordIndex) in realTranscriptionWords" :key="`real-${wordIndex}`">
           <span v-if="wordIndex > 0" class="select-none">&nbsp;</span>

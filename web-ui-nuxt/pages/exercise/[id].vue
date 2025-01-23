@@ -13,8 +13,12 @@
         <!-- Progress Bar -->
         <div class="mb-8">
           <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>Progress: {{ progressStats.current }} / {{ progressStats.total }}</span>
-            <span>{{ Math.round(progressStats.percentage) }}%</span>
+            <span>Progress: {{ progressStats.completed }} / {{ progressStats.total }}</span>
+            <div class="flex gap-4">
+              <span class="text-green-600">Completed: {{ progressStats.completed }}</span>
+              <span class="text-yellow-600">Skipped: {{ progressStats.skipped }}</span>
+              <span>{{ Math.round(progressStats.percentage) }}%</span>
+            </div>
           </div>
           <div class="mt-2 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
             <div
@@ -34,6 +38,58 @@
         />
       </template>
     </div>
+
+    <!-- Completion Modal -->
+    <div v-if="showCompletionModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+        <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+          Exercise Completed!
+        </h3>
+        <p class="mb-6 text-gray-600 dark:text-gray-400">
+          Would you like to reset your progress and try this exercise again?
+        </p>
+        <div class="flex justify-end gap-4">
+          <button
+            @click="handleReturnToDashboard"
+            class="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
+            Return to Dashboard
+          </button>
+          <button
+            @click="handleResetAndRetry"
+            class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            Reset and Retry
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incomplete Exercise Modal -->
+    <div v-if="showIncompleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+        <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+          Exercise Not Completed
+        </h3>
+        <p class="mb-6 text-gray-600 dark:text-gray-400">
+          You have skipped some sentences. Would you like to continue practicing or return to dashboard?
+        </p>
+        <div class="flex justify-end gap-4">
+          <button
+            @click="handleReturnToDashboard"
+            class="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
+            Return to Dashboard
+          </button>
+          <button
+            @click="handleContinuePractice"
+            class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            Continue Practice
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -44,23 +100,32 @@ const route = useRoute()
 const supabase = useSupabaseClient()
 const router = useRouter()
 const user = useSupabaseUser()
+const { resetExerciseSentencesProgress, checkExerciseCompletion } = useProgress()
 
 const exercise = ref<Exercise | null>(null)
-const sentences = ref<Sentence[]>([])
+const remainingSentences = ref<Sentence[]>([])
 const currentSentenceIndex = ref(0)
 const loading = ref(true)
-const completedCount = ref(0)
-const skippedCount = ref(0)
+const showCompletionModal = ref(false)
+const showIncompleteModal = ref(false)
+const lastSentenceCompleted = ref(false)
+const readyForNext = ref(false)
+
+// Progress tracking
+const progressStats = ref({
+  total: 0,
+  completed: 0,
+  skipped: 0,
+  percentage: 0
+})
 
 // Computed properties
-const currentSentence = computed(() => sentences.value[currentSentenceIndex.value])
+const currentSentence = computed(() => remainingSentences.value[currentSentenceIndex.value])
 
-const progressStats = computed(() => ({
-  current: currentSentenceIndex.value + 1,
-  total: sentences.value.length,
-  // percentage: ((completedCount.value + skippedCount.value) / sentences.value.length) * 100
-  percentage: (completedCount.value / sentences.value.length) * 100
-}))
+function updateProgressStats() {
+  // Считаем процент только по completed предложениям
+  progressStats.value.percentage = (progressStats.value.completed / progressStats.value.total) * 100
+}
 
 // Methods
 function speakSentence() {
@@ -81,11 +146,30 @@ async function handlePronunciationScore(score: number) {
         user_id: user.value.id,
         exercise_id: route.params.id,
         sentence_id: currentSentence.value.id,
-        status: score >= 0.8 ? 'completed' : 'not_completed'
+        status: score >= 0.78 ? 'completed' : 'not_completed'
       })
 
-    if (score >= 0.8) {
-      completedCount.value++
+    if (score >= 0.78) {
+      progressStats.value.completed++
+      updateProgressStats()
+      
+      // Проверяем, является ли это последним предложением
+      const isLastSentence = currentSentenceIndex.value === remainingSentences.value.length - 1
+      
+      if (isLastSentence) {
+        lastSentenceCompleted.value = true
+        // Проверяем общее завершение упражнения
+        const isCompleted = await checkExerciseCompletion(route.params.id as string)
+        if (isCompleted) {
+          await updateExerciseStatus('completed')
+          // Отложенный показ модального окна
+          setTimeout(() => {
+            showCompletionModal.value = true
+          }, 2000)
+        }
+      }
+      // Устанавливаем флаг готовности к переходу вместо автоматического перехода
+      readyForNext.value = true
     }
   } catch (err) {
     console.error('Error updating sentence progress:', err)
@@ -105,19 +189,44 @@ async function skipSentence() {
         status: 'skipped'
       })
 
-    skippedCount.value++
-    nextSentence()
+    // Обновляем счетчик пропущенных только если это новое пропущенное предложение
+    const isNewSkip = !remainingSentences.value.some(s => 
+      s.id === currentSentence.value?.id && progressStats.value.skipped > 0
+    )
+    if (isNewSkip) {
+      progressStats.value.skipped++
+    }
+    
+    // Если это последнее предложение, показываем модальное окно о незавершенном упражнении
+    if (currentSentenceIndex.value >= remainingSentences.value.length - 1) {
+      showIncompleteModal.value = true
+    } else {
+      currentSentenceIndex.value++
+    }
   } catch (err) {
     console.error('Error skipping sentence:', err)
   }
 }
 
 async function nextSentence() {
-  if (currentSentenceIndex.value < sentences.value.length - 1) {
-    currentSentenceIndex.value++
-  } else {
-    await updateExerciseStatus('completed')
+  // Проверяем готовность к переходу
+  if (!readyForNext.value) return
+
+  // Если это было последнее успешно выполненное предложение
+  if (lastSentenceCompleted.value) {
     router.push('/dashboard')
+    return
+  }
+
+  if (currentSentenceIndex.value < remainingSentences.value.length - 1) {
+    currentSentenceIndex.value++
+    // Сбрасываем флаг готовности после перехода
+    readyForNext.value = false
+  } else {
+    // Перезагружаем данные, чтобы обновить список оставшихся предложений
+    await loadExerciseData()
+    // Сбрасываем флаг готовности после перезагрузки
+    readyForNext.value = false
   }
 }
 
@@ -138,14 +247,35 @@ async function updateExerciseStatus(status: 'completed' | 'in_progress') {
   }
 }
 
-// Fetch exercise data
-onMounted(async () => {
-  if (!user.value) {
-    return router.push('/auth/login')
+async function handleResetAndRetry() {
+  try {
+    loading.value = true
+    await resetExerciseSentencesProgress(route.params.id as string)
+    await loadExerciseData()
+    showCompletionModal.value = false
+    showIncompleteModal.value = false
+    currentSentenceIndex.value = 0
+  } catch (err) {
+    console.error('Error resetting exercise:', err)
+  } finally {
+    loading.value = false
   }
+}
+
+function handleReturnToDashboard() {
+  router.push('/dashboard')
+}
+
+function handleContinuePractice() {
+  showIncompleteModal.value = false
+  loadExerciseData()
+}
+
+async function loadExerciseData() {
+  if (!user.value) return
 
   try {
-    // Fetch exercise with sentences
+    // First, get all sentences for this exercise
     const { data: exerciseData, error: exerciseError } = await supabase
       .from('exercises')
       .select(`
@@ -170,32 +300,63 @@ onMounted(async () => {
     if (exerciseError) throw exerciseError
 
     exercise.value = exerciseData
-    sentences.value = exerciseData.exercise_sentences.map(es => es.sentences)
+    const allSentences = exerciseData.exercise_sentences.map(es => es.sentences)
+    progressStats.value.total = allSentences.length
 
-    // Fetch progress
+    // Get progress for all sentences
     const { data: progressData } = await supabase
       .from('user_exercise_sentence_progress')
-      .select('status, sentence_id')
+      .select('sentence_id, status')
       .eq('exercise_id', route.params.id)
       .eq('user_id', user.value.id)
-    
-    
-    const completedSentencesIds = progressData?.filter(p => p.status === 'completed').map(c => c.sentence_id)
-    if (!completedSentencesIds) throw Error(
-      `Could not filter exercise sentence progress for exercise: '${route.params.id}' and user: ${user.value.id}`
+
+    // Create a map of sentence progress
+    const progressMap = new Map(
+      progressData?.map(p => [p.sentence_id, p.status]) || []
     )
 
-    const completed = sentences.value.filter(s => completedSentencesIds.includes(s.id))
-    const uncompleted = sentences.value.filter(s => !completedSentencesIds.includes(s.id))
-    currentSentenceIndex.value = completedSentencesIds?.length - 1
-    sentences.value = completed.concat(uncompleted)
+    // Сбрасываем флаги при загрузке новых данных
+    lastSentenceCompleted.value = false
+    readyForNext.value = false
 
+    // Count completed and skipped sentences
     if (progressData) {
-      completedCount.value = progressData.filter(p => p.status === 'completed').length
-      skippedCount.value = progressData.filter(p => p.status === 'skipped').length
+      // Считаем только уникальные пропущенные предложения
+      const uniqueSkipped = new Set(progressData.filter(p => p.status === 'skipped').map(p => p.sentence_id))
+      progressStats.value.completed = progressData.filter(p => p.status === 'completed').length
+      progressStats.value.skipped = uniqueSkipped.size
     }
+
+    // Filter out completed sentences, keep only not attempted or skipped
+    remainingSentences.value = allSentences.filter(sentence => {
+      const status = progressMap.get(sentence.id)
+      return !status || status === 'not_completed' || status === 'skipped'
+    })
+
+    updateProgressStats()
+
+    // Проверяем реальное завершение упражнения
+    const isCompleted = await checkExerciseCompletion(route.params.id as string)
+    if (isCompleted) {
+      showCompletionModal.value = true
+    }
+
   } catch (err) {
     console.error('Error fetching exercise:', err)
+    throw err
+  }
+}
+
+// Fetch exercise data and initialize progress
+onMounted(async () => {
+  if (!user.value) {
+    return router.push('/auth/login')
+  }
+
+  try {
+    await loadExerciseData()
+  } catch (err) {
+    console.error('Error loading exercise:', err)
   } finally {
     loading.value = false
   }

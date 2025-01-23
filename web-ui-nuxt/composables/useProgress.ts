@@ -63,6 +63,38 @@ export function useProgress() {
     }
   }
 
+  async function resetExerciseSentencesProgress(exerciseId: string) {
+    if (!user.value) return false
+
+    try {
+      // Get all sentences for this exercise
+      const { data: sentences, error: sentencesError } = await supabase
+        .from('exercise_sentences')
+        .select('sentence_id')
+        .eq('exercise_id', exerciseId)
+
+      if (sentencesError) throw sentencesError
+
+      // for every sentence in exercise 
+      sentences.forEach(async s => {
+        // update progress for all sentences in exercise
+        const { error: progressResetError } = await supabase
+          .from('user_exercise_sentence_progress')
+          .upsert({
+            user_id: user?.value?.id,
+            exercise_id: exerciseId,
+            sentence_id: s.sentence_id,
+            status: "not_completed"
+          })
+        if (progressResetError) throw progressResetError
+      })
+
+    } catch (e) {
+      console.error('Failed to reset exercise completion progress:', e)
+      throw e
+    }
+  }
+
   async function updateExerciseProgress(exerciseId: string) {
     if (!user.value) return
 
@@ -89,6 +121,7 @@ export function useProgress() {
     updateSentenceProgress,
     updateExerciseProgress,
     checkExerciseCompletion,
+    resetExerciseSentencesProgress,
     error
   }
 }

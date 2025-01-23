@@ -50,7 +50,7 @@ async def transcribe(
     # создаём директорию, если её нет
     file_path = os.path.join(
         "test_audios",
-        f"{dt.datetime.now().strftime("%Y%m%d-%H%M%S")}{sentence_id}_{audio.filename}"
+        f"{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}{sentence_id}_{audio.filename}"
     )
     with open(file_path, "wb") as f:
         f.write(audio_content)

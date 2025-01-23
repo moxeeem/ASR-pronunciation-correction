@@ -146,10 +146,10 @@ async function handlePronunciationScore(score: number) {
         user_id: user.value.id,
         exercise_id: route.params.id,
         sentence_id: currentSentence.value.id,
-        status: score >= 0.78 ? 'completed' : 'not_completed'
+        status: score >= 0.8 ? 'completed' : 'not_completed'
       })
 
-    if (score >= 0.78) {
+    if (score >= 0.8) {
       progressStats.value.completed++
       updateProgressStats()
       
